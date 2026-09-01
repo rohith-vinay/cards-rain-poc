@@ -51,7 +51,7 @@ function renderTiles(balances) {
     .join('');
 }
 
-function renderCards(cards, partner) {
+function renderCards(cards, partner, businessName) {
   $('cardCount').textContent = cards.length ? `${cards.length} issued` : '';
 
   if (!cards.length) {
@@ -76,7 +76,13 @@ function renderCards(cards, partner) {
             <span class="scheme">VISA</span>
           </div>
           <div class="pan">•••• ${c.last4}</div>
-          <div class="meta"><span>${c.holder}</span><span>${c.expiry}</span></div>
+          <div class="meta">
+            <span class="owner">
+              <span class="holder">${c.holder.toUpperCase()}</span>
+              <span class="biz">${(businessName ?? '').toUpperCase()}</span>
+            </span>
+            <span class="exp">${c.expiry}</span>
+          </div>
         </div>
         <div class="cardmeta">
           <span class="who">${c.holder}</span>
@@ -176,7 +182,7 @@ async function selectBusiness(companyId) {
   if (data.partner) document.documentElement.style.setProperty('--accent', data.partner.brand.accent);
 
   renderTiles(data.balances);
-  renderCards(data.cards, data.partner);
+  renderCards(data.cards, data.partner, data.business.name);
   renderTransactions(data.transactions);
 }
 

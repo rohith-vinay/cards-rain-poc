@@ -3,6 +3,7 @@ import { asyncHandler } from '../lib/async-handler.js';
 import { HttpError } from '../lib/errors.js';
 import { getPartner, PARTNERS } from '../partners/registry.js';
 import { rain } from '../rain/client.js';
+import { holderLabel } from '../rain/names.js';
 import type { IssuingCard, IssuingTransaction } from '../rain/types.js';
 import { db } from '../store/db.js';
 
@@ -57,7 +58,7 @@ portalRouter.get(
       rain.listTransactions({ companyId, limit: 25 }).catch((): IssuingTransaction[] => []),
     ]);
 
-    const holders = new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName}`]));
+    const holders = new Map(users.map((u) => [u.id, holderLabel(u.firstName, u.lastName)]));
 
     res.json({
       business: { companyId, name: business.name, contractId: business.contractId },
@@ -77,7 +78,7 @@ portalRouter.get(
       })),
       cardholders: users.map((u) => ({
         id: u.id,
-        name: `${u.firstName} ${u.lastName}`,
+        name: holderLabel(u.firstName, u.lastName),
         email: u.email,
         isActive: u.isActive,
       })),

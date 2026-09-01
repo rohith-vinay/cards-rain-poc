@@ -3,6 +3,7 @@ import { asyncHandler } from '../lib/async-handler.js';
 import { HttpError } from '../lib/errors.js';
 import { resolveCardDesign, stripClientDesign } from '../partners/registry.js';
 import { rain } from '../rain/client.js';
+import { cardDisplayName } from '../rain/names.js';
 import type { CardLimitFrequency, CardStatus, CardType } from '../rain/types.js';
 import { db } from '../store/db.js';
 
@@ -41,11 +42,20 @@ cardsRouter.post(
     const business = req.body?.companyId ? db.findBusiness(req.body.companyId) : undefined;
     const design = business ? resolveCardDesign(business.partnerId) : {};
 
+    // Emboss the display name without the sandbox status token, so the card reads
+    // "User 1" rather than "User 1Approved".
+    const holder = await rain.getUser(req.params.userId!).catch(() => null);
+    const displayName = holder ? cardDisplayName(holder.firstName, holder.lastName) : undefined;
+
     const card = await rain.createCard(req.params.userId!, {
       type,
       status: req.body?.status ?? 'active',
       limit,
-      configuration: { ...stripClientDesign(req.body?.configuration), ...design },
+      configuration: {
+        ...(displayName ? { displayName } : {}),
+        ...stripClientDesign(req.body?.configuration),
+        ...design,
+      },
       billing: req.body?.billing,
       shipping: req.body?.shipping,
     });

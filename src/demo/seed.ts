@@ -28,10 +28,18 @@ const BUSINESS_NAMES: Record<string, string[]> = {
   'partner-c': ['Business C1'],
 };
 
-const EMPLOYEES = [
-  { firstName: 'Priya', lastName: 'TestApproved' },
-  { firstName: 'Tomas', lastName: 'TestApproved' },
-];
+/**
+ * Cardholders are User 1..N so ownership reads straight off the card: Partner A,
+ * Business A1, User 1. The "Approved" suffix stays on the last name because Rain drives
+ * the employee's KYC outcome from it - without it they sit at `pending` and card
+ * issuance fails with 403. It is stripped for display.
+ */
+const EMPLOYEES_PER_BUSINESS = 2;
+const employees = () =>
+  Array.from({ length: EMPLOYEES_PER_BUSINESS }, (_, i) => ({
+    firstName: 'User',
+    lastName: `${i + 1}Approved`,
+  }));
 
 const money = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
@@ -102,11 +110,11 @@ async function seedBusiness(
 
     // 4. Cardholders. No cards - issuing one live is the demo's opening beat.
     const userIds: string[] = [];
-    for (const employee of EMPLOYEES) {
+    for (const [i, employee] of employees().entries()) {
       const user = await rain.createCompanyUser(company.id, {
         ...employee,
-        email: `${employee.firstName.toLowerCase()}@${nonce}.example.com`,
-        externalId: `${nonce}-${employee.firstName.toLowerCase()}`,
+        email: `user${i + 1}@${nonce}.example.com`,
+        externalId: `${nonce}-user${i + 1}`,
       });
       userIds.push(user.id);
     }
