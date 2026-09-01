@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import { config } from '../config.js';
 import { db, type WebhookEvent } from '../store/db.js';
 import { eventBus } from './events.js';
+import { diagnoseSignature } from './diagnose.js';
 import { verifySignature } from './verify.js';
 
 export const webhookRouter = Router();
@@ -23,6 +24,19 @@ webhookRouter.post(
       req.header('Signature') ?? undefined,
       req.header('Secondary-Signature') ?? undefined,
     );
+
+    if (!signatureValid && config.webhookDebug) {
+      console.warn(
+        '[webhook] signature did not verify - diagnosing:\n' +
+          diagnoseSignature(raw, req.headers as Record<string, string | string[] | undefined>, [
+            { label: 'signingKey', value: config.webhookSigningKey },
+            ...(config.webhookSigningKeySecondary
+              ? [{ label: 'secondaryKey', value: config.webhookSigningKeySecondary }]
+              : []),
+            { label: 'apiKey', value: config.apiKey },
+          ]),
+      );
+    }
 
     if (!signatureValid && config.enforceWebhookSignature) {
       console.warn('[webhook] rejected: signature did not verify');

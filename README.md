@@ -196,8 +196,25 @@ here needs a PAN. Implementing the session keypair is the one deliberate gap.
 ## Verified end to end
 
 The full run has been executed against Rain's sandbox with a live key — all 20 steps green,
-from KYB through to an open dispute. See `NOTES.md` for the fifteen places where the OpenAPI
-spec or the docs disagree with the sandbox's actual behaviour.
+from KYB through to an open dispute.
+
+Webhooks are verified against **real Rain-signed deliveries** through a public tunnel:
+`transaction.requested`, `transaction.created`, `transaction.completed` and `card.updated`
+all arrive, verify, and store, with zero signature failures.
+
+See `NOTES.md` for the 25 places where the OpenAPI spec or the docs disagree with the
+sandbox's actual behaviour.
+
+### If every webhook 401s
+
+Check the signing key length first — Rain keys are **40 hex characters**, and a truncated
+one produces signatures that never match. Then:
+
+```bash
+WEBHOOK_DEBUG=true npm start
+```
+
+That prints which key, payload and encoding Rain actually used, against a live signature.
 
 ## Known gaps
 

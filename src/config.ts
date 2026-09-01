@@ -30,6 +30,8 @@ export const config = {
   webhookSigningKey: optional('RAIN_WEBHOOK_SIGNING_KEY') || required('RAIN_API_KEY'),
   webhookSigningKeySecondary: optional('RAIN_WEBHOOK_SIGNING_KEY_SECONDARY') || null,
   enforceWebhookSignature: optional('WEBHOOK_ENFORCE_SIGNATURE', 'true') !== 'false',
+  /** Log how a failing signature was actually produced. */
+  webhookDebug: optional('WEBHOOK_DEBUG', 'false') === 'true',
   chainId: Number(optional('RAIN_CHAIN_ID', '84532')),
   ownerAddress: optional('RAIN_OWNER_ADDRESS'),
   port: Number(optional('PORT', '4000')),

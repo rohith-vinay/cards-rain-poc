@@ -195,3 +195,34 @@ The OpenAPI spec (v1.3.0) or the docs are wrong or silent on all of them.
 18. **`GET /issuing/webhooks` returned 0 deliveries**, confirming Rain has never
     attempted a webhook against this tenant - no endpoint is registered in the dashboard
     yet. Useful as a check before claiming webhooks work.
+
+## Webhook delivery findings (2026-09-01, live tunnel)
+
+19. **`transaction.requested` IS delivered in a Rain-managed program.** The docs frame
+    it as the partner-managed authorization hook, and the transaction-lifecycle pages
+    imply a Rain-managed tenant never sees it. In practice Rain sends BOTH
+    `transaction.requested` and `transaction.created` for every simulated authorization
+    (14 of each over the test run). It appears to be informational here rather than a
+    decision point, but a receiver must handle it.
+
+20. **The envelope payload field is `body`, not `data`.** Actual shape:
+    `{ id, resource, action, version, body }` where `body` holds the resource, e.g. a
+    full IssuingTransaction. Plan for a `data` key and you will read undefined.
+
+21. **No timestamp header.** The signature covers the body alone - there is no
+    timestamp-and-body scheme, so replay protection has to come from the envelope id.
+
+22. Merchant fields are space-padded in the payload: `"merchantName":"Capture Probe            "`,
+    `"merchantCountry":"  "`. Trim before display or comparison.
+
+23. Delivery is fast: `requestSentAt` to `responseReceivedAt` was 120-330ms in testing,
+    and Rain retries promptly on a non-2xx.
+
+24. **Rain API keys are 40 hex characters.** A key truncated to 32 produced signatures
+    that never matched, which is indistinguishable from a forged request. If every
+    delivery 401s, check the key length first. `WEBHOOK_DEBUG=true` prints the
+    key/payload/encoding matrix against a real signature (src/webhooks/diagnose.ts).
+
+25. **Event types observed in a Rain-managed corporate program** (simulated spend):
+    `transaction.requested`, `transaction.created`, `transaction.completed` (fires for
+    both settlement and refund), and `card.updated` (fires on lock and on unlock).
