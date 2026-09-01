@@ -48,8 +48,10 @@ npm run seed     # provision partners and businesses — do this BEFORE the demo
 npm start        # then open http://localhost:4040
 ```
 
-`npm run seed` creates two partners with two businesses each, funds every one with $50,000
-of simulated collateral, and adds cardholders. It refuses to mark a business ready until
+`npm run seed` creates three partners and six businesses — Partner A with Business A1, A2
+and A3; Partner B with B1 and B2; Partner C with C1 — funds every one with $50,000 of
+simulated collateral, and adds cardholders. The labels are deliberately plain so the
+hierarchy reads itself on screen. It refuses to mark a business ready until
 spending power is confirmed above zero, so the slow and occasionally flaky parts — KYB and
 collateral crediting — happen well before an audience.
 

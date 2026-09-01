@@ -150,14 +150,17 @@ async function loadContext() {
     )
     .join('');
 
-  $('businessPicker').innerHTML =
-    options || '<option value="">No businesses — run: npm run seed</option>';
+  const picker = $('businessPicker');
+  picker.innerHTML = options || '<option value="">No businesses — run: npm run seed</option>';
+  // Browsers restore a previously selected option across reloads; a demo should always
+  // open on the same business.
+  picker.selectedIndex = 0;
 
   $('footnote').textContent = ctx.isolationNote +
     ' Card art is resolved from the partner by the backend and never accepted from the browser; ' +
     'the designs shown here are Mesta-side until custom card art is contracted with Rain.';
 
-  if (options) await selectBusiness($('businessPicker').value);
+  if (options) await selectBusiness(picker.value);
   else toast('No businesses provisioned. Run: npm run seed', true);
 }
 

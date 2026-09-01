@@ -43,12 +43,12 @@ export interface Partner {
 
 export const PARTNERS: Partner[] = [
   {
-    id: 'partner-northstar',
-    name: 'Northstar Pay',
+    id: 'partner-a',
+    name: 'Partner A',
     customerNoun: 'business',
     design: {
-      virtualCardArt: 'northstar-virtual-v1',
-      productRef: 'northstar-physical-v1',
+      virtualCardArt: 'partner-a-virtual-v1',
+      productRef: 'partner-a-physical-v1',
     },
     brand: {
       accent: '#2F5DD6',
@@ -58,18 +58,33 @@ export const PARTNERS: Partner[] = [
     },
   },
   {
-    id: 'partner-meridian',
-    name: 'Meridian Spend',
-    customerNoun: 'company',
+    id: 'partner-b',
+    name: 'Partner B',
+    customerNoun: 'business',
     design: {
-      virtualCardArt: 'meridian-virtual-v1',
-      productRef: 'meridian-physical-v1',
+      virtualCardArt: 'partner-b-virtual-v1',
+      productRef: 'partner-b-physical-v1',
     },
     brand: {
       accent: '#0E7C66',
       cardFrom: '#0B5A4A',
       cardTo: '#16A085',
       cardInk: '#EEFBF7',
+    },
+  },
+  {
+    id: 'partner-c',
+    name: 'Partner C',
+    customerNoun: 'business',
+    design: {
+      virtualCardArt: 'partner-c-virtual-v1',
+      productRef: 'partner-c-physical-v1',
+    },
+    brand: {
+      accent: '#6D3FC4',
+      cardFrom: '#4C2A8C',
+      cardTo: '#7C4DDB',
+      cardInk: '#F5F0FF',
     },
   },
 ];

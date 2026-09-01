@@ -18,9 +18,14 @@ import { corporateApplication } from '../rain/fixtures.js';
 import { TERMINAL_APPLICATION_STATUSES } from '../rain/types.js';
 import { db, type SeededBusiness } from '../store/db.js';
 
+/**
+ * Deliberately plain labels: in a demo the hierarchy should read itself, so Business A1
+ * is obviously one of Partner A's businesses without anyone having to explain it.
+ */
 const BUSINESS_NAMES: Record<string, string[]> = {
-  'partner-northstar': ['Harbor Freight Collective', 'Lantern Creative Studio'],
-  'partner-meridian': ['Cedar Ridge Manufacturing', 'Anchor Point Consulting'],
+  'partner-a': ['Business A1', 'Business A2', 'Business A3'],
+  'partner-b': ['Business B1', 'Business B2'],
+  'partner-c': ['Business C1'],
 };
 
 const EMPLOYEES = [

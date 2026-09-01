@@ -29,8 +29,11 @@ portalRouter.get('/context', (_req, res) => {
       customerNoun: p.customerNoun,
       brand: p.brand,
       design: p.design,
+      // Sorted by name so the picker order is stable regardless of what has been
+      // touched since seeding.
       businesses: businesses
         .filter((b) => b.partnerId === p.id)
+        .sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }))
         .map((b) => ({ companyId: b.companyId, name: b.name, cards: b.cardIds.length })),
     })),
   });

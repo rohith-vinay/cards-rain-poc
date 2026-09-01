@@ -115,8 +115,14 @@ export const db = {
   },
 
   upsertBusiness(business: SeededBusiness): void {
-    const businesses = state.businesses.filter((b) => b.companyId !== business.companyId);
-    state = { ...state, businesses: [...businesses, business] };
+    // Replace in place. Removing and re-appending would reorder the list every time a
+    // card was issued, which reshuffles the portal's business picker.
+    const index = state.businesses.findIndex((b) => b.companyId === business.companyId);
+    const businesses =
+      index === -1
+        ? [...state.businesses, business]
+        : state.businesses.map((b, i) => (i === index ? business : b));
+    state = { ...state, businesses };
     persist();
   },
 
