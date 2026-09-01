@@ -1,0 +1,72 @@
+%% Rain sandbox POC - Rain-managed CORPORATE card program
+%% Renders in GitHub, mermaid.live, Notion, Obsidian, VS Code (Markdown Preview Mermaid)
+sequenceDiagram
+    autonumber
+    participant POC as POC backend
+    participant API as Rain API<br/>/v1/issuing
+    participant SIM as Rain sandbox<br/>/v1/simulate
+    participant HOOK as Webhook receiver
+
+    Note over POC,HOOK: Every webhook: HMAC-SHA256 over the raw body, then 2xx fast
+
+    Note over POC,HOOK: 1 - Onboard the business (KYB)
+    POC->>API: POST /applications/company<br/>entity + address + representatives + UBOs
+    API-->>POC: 200 IssuingCompany {id, applicationStatus}
+    API->>HOOK: company.updated
+    POC->>API: PUT /applications/company/{id}/document
+    POC->>API: GET /applications/company/{id}
+    API-->>POC: approved, per-UBO statuses
+
+    Note over POC,HOOK: 2 - Deploy the company collateral contract
+    POC->>API: POST /companies/{id}/contracts<br/>{chainId, ownerAddress}
+    API-->>POC: 202 Accepted (async deploy)
+    API->>HOOK: contract.created
+    POC->>API: GET /companies/{id}/contracts
+    API-->>POC: [{id, proxyAddress, adminAddresses}]
+
+    Note over POC,HOOK: 3 - Fund collateral (sandbox only)
+    POC->>SIM: POST /simulate/collateral/fund<br/>{contractId, rusd, amount}
+    SIM-->>POC: 200 {transactionId}
+    SIM->>HOOK: transaction.created (collateral)
+    POC->>API: GET /companies/{id}/balances
+    API-->>POC: spendingPower > 0
+
+    Note over POC,HOOK: 4 - Add employees, issue their cards
+    POC->>API: POST /companies/{id}/users
+    API-->>POC: 200 IssuingUser {id}
+    POC->>API: POST /users/{userId}/cards<br/>{virtual, active, limit}
+    API-->>POC: 200 IssuingCard {id, last4, expiry}
+    API->>HOOK: card.updated
+    Note right of POC: employees share the company contract<br/>no per-user collateral
+
+    Note over POC,HOOK: 5 - Configure and control
+    POC->>API: PATCH /cards/{cardId} {limit}
+    POC->>API: PATCH /cards/{cardId} {status: locked}
+    API->>HOOK: card.updated
+
+    Note over POC,HOOK: 6 - Authorize, then settle
+    POC->>SIM: POST /simulate/transactions/authorize
+    SIM-->>POC: 200 {transactionId, status: authorized}
+    SIM->>HOOK: transaction.created (spend)
+    POC->>API: GET /companies/{id}/balances
+    API-->>POC: pendingCharges rises
+
+    POC->>SIM: PATCH /simulate/transactions/{id}/authorize {amount}
+    SIM->>HOOK: transaction.updated
+
+    POC->>SIM: POST /simulate/transactions/{id}/settle
+    SIM-->>POC: 200 {status: settled, SETTLEMENT}
+    SIM->>HOOK: transaction.completed
+    POC->>API: GET /companies/{id}/balances
+    API-->>POC: pending clears, postedCharges rises
+
+    Note over POC,HOOK: 7 - Exception paths
+    POC->>SIM: POST /simulate/transactions/authorize {declineReason}
+    SIM-->>POC: 200 {status: declined, declinedReason}
+    POC->>SIM: POST /simulate/transactions/{id}/reverse
+    SIM-->>POC: 200 hold released, nothing posted
+    POC->>SIM: POST /simulate/transactions/{id}/refund
+    SIM-->>POC: 200 {completionReason: REFUND}
+    POC->>API: POST /transactions/{id}/disputes
+    API-->>POC: 200 IssuingDispute {status: pending}
+    API->>HOOK: dispute.created
