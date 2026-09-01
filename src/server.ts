@@ -1,3 +1,5 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { config } from './config.js';
 import { HttpError, RainApiError } from './lib/errors.js';
@@ -5,6 +7,7 @@ import { cardsRouter } from './routes/cards.js';
 import { companiesRouter } from './routes/companies.js';
 import { demoRouter } from './routes/demo.js';
 import { disputesRouter } from './routes/disputes.js';
+import { portalRouter } from './routes/portal.js';
 import { eventsRouter } from './routes/events.js';
 import { simulateRouter } from './routes/simulate.js';
 import { transactionsRouter } from './routes/transactions.js';
@@ -38,6 +41,11 @@ app.use('/api', disputesRouter);
 app.use('/api', eventsRouter);
 app.use('/api/simulate', simulateRouter);
 app.use('/api/demo', demoRouter);
+app.use('/api/portal', portalRouter);
+
+// The demo portal, served by this same process. One command on demo day, no build step,
+// no second port, no CORS.
+app.use(express.static(resolve(dirname(fileURLToPath(import.meta.url)), '..', 'public')));
 
 app.use((req, res) => {
   res.status(404).json({ error: `No route for ${req.method} ${req.path}` });
@@ -72,6 +80,7 @@ app.listen(config.port, () => {
   console.log(`  Rain base URL     ${config.baseUrl}`);
   console.log(`  Webhook receiver  POST /webhooks/rain`);
   console.log(`  Event stream      GET  /api/events/stream`);
+  console.log(`  Demo portal       http://localhost:${config.port}/`);
   console.log(`  Run the demo      POST /api/demo/run   (or: npm run demo)`);
   if (!config.enforceWebhookSignature) {
     console.warn('  WARNING: webhook signature checking is disabled.');

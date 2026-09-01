@@ -38,7 +38,51 @@ Register `https://<your-tunnel>/webhooks/rain`.
 
 ---
 
-## The demo
+## The demo portal
+
+A single page styled as **Aloha**, served by the same Express process — no build step, no
+second port, no CORS. On demo day the whole thing is one command.
+
+```bash
+npm run seed     # provision partners and businesses — do this BEFORE the demo
+npm start        # then open http://localhost:4040
+```
+
+`npm run seed` creates two partners with two businesses each, funds every one with $50,000
+of simulated collateral, and adds cardholders. It refuses to mark a business ready until
+spending power is confirmed above zero, so the slow and occasionally flaky parts — KYB and
+collateral crediting — happen well before an audience.
+
+### Demo runbook, about three minutes
+
+1. **Issue a card** — appears instantly in the partner's branding
+2. **Simulate a purchase** — type any amount and merchant; watch spending power drop and
+   webhooks stream into the live feed
+3. **Settle** — the charge moves from pending to posted
+4. **Lock the card**, then try to spend again — **refused**. This is the beat that matters:
+   everything before it says "we can issue cards", this one says "we control them"
+5. **Unlock**, then **Refund** to close the loop
+6. **Switch partner** in the header — the same page, a different partner's card design
+
+### What the page is honest about
+
+Partner grouping is Mesta-side. Rain's equivalent is a subtenant, which is not contracted
+on this tenant (`GET /issuing/subtenants` returns 403), so Rain sees one program. Card art
+IDs are resolved per partner by the backend but stay inert until custom art is contracted
+with Rain. Both facts are stated in a footnote on the page rather than left to be discovered.
+
+### Per-partner card design
+
+Rain has no per-tenant design setting — card art is chosen per card at issuance, and Rain
+validates only that an art ID is enabled for *your program*, not that the caller owns it.
+So `src/partners/registry.ts` holds the `partner → design` map, the card routes resolve
+design from the company's partner, and any client-supplied `virtualCardArt` / `productRef` /
+`productId` is stripped before the call. A browser cannot issue a card in another partner's
+branding.
+
+Set `RAIN_CUSTOM_CARD_ART=true` once Rain has enabled custom art for the program.
+
+## The scripted run
 
 ```bash
 npm run demo

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../lib/async-handler.js';
 import { HttpError } from '../lib/errors.js';
+import { resolveCardDesign, stripClientDesign } from '../partners/registry.js';
 import { rain } from '../rain/client.js';
 import type { CardLimitFrequency, CardStatus, CardType } from '../rain/types.js';
 import { db } from '../store/db.js';
@@ -33,16 +34,26 @@ cardsRouter.post(
     const limit = req.body?.limit;
     if (limit) validateLimit(limit);
 
+    // Card design is resolved from the company's partner, never from the request.
+    // Rain validates only that an art id is enabled for the program - not that the
+    // caller owns it - so a pass-through would let one partner issue cards in another
+    // partner's branding.
+    const business = req.body?.companyId ? db.findBusiness(req.body.companyId) : undefined;
+    const design = business ? resolveCardDesign(business.partnerId) : {};
+
     const card = await rain.createCard(req.params.userId!, {
       type,
       status: req.body?.status ?? 'active',
       limit,
-      configuration: req.body?.configuration,
+      configuration: { ...stripClientDesign(req.body?.configuration), ...design },
       billing: req.body?.billing,
       shipping: req.body?.shipping,
     });
 
     db.push('cardIds', card.id);
+    if (business) {
+      db.upsertBusiness({ ...business, cardIds: [...new Set([...business.cardIds, card.id])] });
+    }
     res.status(201).json(card);
   }),
 );
@@ -76,7 +87,12 @@ cardsRouter.patch(
     if (req.body?.status && !CARD_STATUSES.includes(req.body.status)) {
       throw new HttpError(400, `status must be one of ${CARD_STATUSES.join(', ')}.`);
     }
-    res.json(await rain.updateCard(req.params.cardId!, req.body));
+    res.json(
+      await rain.updateCard(req.params.cardId!, {
+        ...req.body,
+        configuration: stripClientDesign(req.body?.configuration),
+      }),
+    );
   }),
 );
 

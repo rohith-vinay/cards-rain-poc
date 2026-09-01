@@ -12,6 +12,17 @@ export interface WebhookEvent {
   payload: Record<string, unknown>;
 }
 
+/** A business provisioned for the portal demo, grouped under a Mesta-side partner. */
+export interface SeededBusiness {
+  companyId: string;
+  name: string;
+  partnerId: string;
+  contractId: string | null;
+  userIds: string[];
+  cardIds: string[];
+  fundedCents: number;
+}
+
 export interface DemoRunStep {
   step: string;
   status: 'ok' | 'failed' | 'skipped';
@@ -30,6 +41,8 @@ export interface DbShape {
   disputeIds: string[];
   events: WebhookEvent[];
   demoLog: DemoRunStep[];
+  /** Portal demo state: businesses grouped under partners. */
+  businesses: SeededBusiness[];
 }
 
 const EMPTY: DbShape = {
@@ -42,6 +55,7 @@ const EMPTY: DbShape = {
   disputeIds: [],
   events: [],
   demoLog: [],
+  businesses: [],
 };
 
 const FILE = resolve(process.cwd(), 'data', 'state.json');
@@ -98,6 +112,16 @@ export const db = {
   appendDemoStep(step: DemoRunStep): void {
     state = { ...state, demoLog: [...state.demoLog, step] };
     persist();
+  },
+
+  upsertBusiness(business: SeededBusiness): void {
+    const businesses = state.businesses.filter((b) => b.companyId !== business.companyId);
+    state = { ...state, businesses: [...businesses, business] };
+    persist();
+  },
+
+  findBusiness(companyId: string): SeededBusiness | undefined {
+    return state.businesses.find((b) => b.companyId === companyId);
   },
 
   resetDemoLog(): void {

@@ -4,14 +4,17 @@
   "private": true,
   "type": "module",
   "description": "Rain corporate card program - sandbox backend POC",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "demo": "tsx src/demo/run.ts",
-    "tunnel": "echo 'Run: cloudflared tunnel --url http://localhost:'${PORT:-4000}"
+    "tunnel": "echo 'Run: cloudflared tunnel --url http://localhost:'${PORT:-4000}",
+    "seed": "tsx src/demo/seed.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

@@ -226,3 +226,51 @@ The OpenAPI spec (v1.3.0) or the docs are wrong or silent on all of them.
 25. **Event types observed in a Rain-managed corporate program** (simulated spend):
     `transaction.requested`, `transaction.created`, `transaction.completed` (fires for
     both settlement and refund), and `card.updated` (fires on lock and on unlock).
+
+---
+
+# Per-partner card branding (research, not yet built)
+
+Target structure: Partner N -> businesses N.1..N.M, with card design specific to each partner.
+
+## What Rain gives you
+
+Card design is chosen **per card at issuance**, via `configuration` on
+`POST /issuing/users/{userId}/cards`:
+
+| Field | Controls | Mutable later? |
+|---|---|---|
+| `virtualCardArt` | Virtual card appearance | Yes - `PATCH /issuing/cards/{id}` |
+| `productRef` | Physical card appearance | **No** - not in the PATCH schema |
+| `productId` | BIN range | **No** |
+| `displayName` | Embossed / network name, 26 chars, Latin only | No |
+
+All three of productId/productRef/virtualCardArt are contract-gated: "only relevant if
+you have custom ... as part of your contract". Rain rejects an art id that is not enabled
+for your program with a 400.
+
+## The critical architectural point
+
+**There is no subtenant-level card design setting.** Design is a per-request parameter,
+and subtenant configuration is overwritten by parent configuration anyway (only
+`webhookUrl` survives). So Rain cannot express "Partner 1's businesses get Partner 1's
+card art".
+
+Consequences:
+
+1. **Mesta owns the partner -> design mapping** and must inject it at issuance.
+2. **Rain enforces no entitlement between partners.** It validates only that an art id is
+   enabled for the program - not that the caller is the partner who owns it. If a client
+   can influence `configuration`, Partner 2 can issue cards in Partner 1's branding.
+   Resolve design server-side from the partner; never accept it from the request body.
+3. **Branding does NOT depend on subtenants.** They are independent mechanisms, so
+   per-partner card art can ship before subtenants are contracted - at the cost of
+   co-mingled card/transaction data at the Rain level.
+
+## Gotchas
+
+- Changing `virtualCardArt` on a card already in Apple/Google Pay does not update the
+  wallet. The card must be removed and re-added to re-tokenize.
+- Physical appearance is immutable: a partner rebrand means reissuing physical cards.
+- Per-user card caps depend on contract tier: Developer 3, Startup 10, Enterprise
+  consumer 50, Enterprise corporate 101 (counting canceled cards).
