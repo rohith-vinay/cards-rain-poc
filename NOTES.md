@@ -356,3 +356,64 @@ triaged", and the dashboard would only list disputes that reached the network.
 
 Unresolved. Needs a question to Rain: does a sandbox dispute against a simulated
 transaction ever leave `pending`, appear in the dashboard, or emit `dispute.created`?
+
+---
+
+# POC vs Rain: capability audit (2026-09-02)
+
+Checked what the portal and API claim against what Rain's spec, docs and live sandbox
+actually do. Three categories.
+
+## A. The card tile shows more than a real card carries
+
+Rain prints exactly **one** name on a card: `configuration.displayName`, max 26
+characters, matching `^[a-zA-Z0-9 .-]+$`. Verified live - 27 characters is rejected, and
+so are accents and ampersands. There is no second embossable line.
+
+Our card tile additionally renders the **partner name**, the **business name** and a
+**status badge**. None of these are printed fields:
+
+- Partner branding on a real card comes from the **artwork** (`productRef` for physical,
+  `virtualCardArt` for virtual), which is contract-gated and per-design, not per-card.
+- The business name is not printed anywhere. If it should appear under the cardholder on
+  physical cards, that is a **card design conversation with Rain**, not an API field.
+- Status is UI state, obviously not on a card.
+- For **virtual** cards there is no embossing at all - `displayName` is documented as
+  "ignored for virtual cards", where it serves the network record rather than a face.
+
+The tile is therefore a **visual metaphor**, not a rendering of the card. Worth saying
+plainly if anyone asks whether that is what the card will look like.
+
+## B. Rain supports it, the portal does not expose it
+
+| Capability | State |
+|---|---|
+| Limit frequencies | Rain accepts all six - `per24HourPeriod`, `per7DayPeriod`, `per30DayPeriod`, `perYearPeriod`, `allTime`, `perAuthorization`. **Verified live, all round-trip correctly.** The portal only ever sets `per30DayPeriod` |
+| Cancel a card | Route exists with a confirm guard; no button in the UI |
+| Reveal PAN / CVC | Route forwards a `SessionId`; the RSA session exchange is unimplemented |
+| Physical cards | Rain supports shipping address, method, recipient name, customs tax id and bulk shipping groups. Not built |
+| Card PIN get / set | Not built at all |
+| Revise an authorization before settling | CLI script only, no button |
+| Transaction memos | Route only |
+| Company fee charges | Route only |
+| Dispute evidence upload | Client method only - no route, no UI |
+| Reports and statements | Not built. Rain notes reports return no data in sandbox anyway |
+| Subtenants | `403` on this tenant, not contracted |
+| Scoped and agentic cards | Not built |
+| 3DS, push provisioning, payment routes, Raindrops | Not built |
+
+## C. Claims we corrected after checking
+
+- The card tile said **`/ mo`** regardless of the actual frequency, so a daily or
+  per-authorization limit would have read as monthly. Now derived from the stored value.
+- The dispute toast said **"filed with the network"**. Disputes never escalate in sandbox
+  and no `dispute.created` webhook fires, so it now says "recorded against the charge",
+  which is what can actually be shown.
+
+## D. Ours, not Rain's - and must not be presented otherwise
+
+- **Partner grouping.** Rain sees one programme; the hierarchy is Mesta-side until
+  subtenants are contracted.
+- **Partner to card-design mapping.** Rain validates only that an art id is enabled for
+  the programme, never that the caller owns it.
+- **The white-label sidebar.** Presentation only.

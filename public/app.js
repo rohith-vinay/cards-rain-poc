@@ -4,6 +4,19 @@ const $ = (id) => document.getElementById(id);
 const money = (cents) =>
   (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
+// Rain supports six limit frequencies. The card tile must say which one it is rather
+// than assuming monthly, or a daily or per-authorization limit reads as a monthly one.
+const FREQUENCY_LABEL = {
+  per24HourPeriod: '/ day',
+  per7DayPeriod: '/ week',
+  per30DayPeriod: '/ mo',
+  perYearPeriod: '/ yr',
+  allTime: 'total',
+  perAuthorization: '/ txn',
+};
+const limitLabel = (limit) =>
+  limit ? `${money(limit.amount)} ${FREQUENCY_LABEL[limit.frequency] ?? limit.frequency}` : 'no limit';
+
 let ctx = null;         // partners + businesses
 let current = null;     // the business currently on screen
 let lastTxId = null;    // most recent authorization, for settle / reverse / refund / dispute
@@ -87,7 +100,7 @@ function renderCards(cards, partner, businessName) {
         </div>
         <div class="cardmeta">
           <span class="who">${c.holder}</span>
-          <span class="lim">${c.limit ? `${money(c.limit.amount)} / mo` : 'no limit'}</span>
+          <span class="lim">${limitLabel(c.limit)}</span>
         </div>
         <div class="cardactions">
           ${
@@ -374,7 +387,7 @@ function showVerdict(state, detail = {}) {
     bar.innerHTML = `
       <div class="verdict ok">
         <strong>Dispute opened &middot; ${money(detail.amount)}</strong>
-        <span>filed with the card network, status ${detail.status ?? 'pending'}</span>
+        <span>recorded against the charge · status ${detail.status ?? 'pending'}</span>
       </div>`;
   }
 }
@@ -395,7 +408,7 @@ $('spendResult').addEventListener('click', async (e) => {
           disputeAmount: Math.min(25000, lastAmount),
         }),
       });
-      toast('Dispute opened and filed with the network');
+      toast('Dispute opened and recorded against the charge');
       showVerdict('disputed', { amount: dispute.disputeAmount, status: dispute.status });
     } else {
       const body =
