@@ -1,0 +1,115 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import express, { type NextFunction, type Request, type Response } from 'express';
+import { config } from './config.js';
+import { HttpError, RainApiError } from './lib/errors.js';
+import { cardsRouter } from './routes/cards.js';
+import { companiesRouter } from './routes/companies.js';
+import { demoRouter } from './routes/demo.js';
+import { disputesRouter } from './routes/disputes.js';
+import { portalRouter } from './routes/portal.js';
+import { eventsRouter } from './routes/events.js';
+import { simulateRouter } from './routes/simulate.js';
+import { transactionsRouter } from './routes/transactions.js';
+import { usersRouter } from './routes/users.js';
+import { webhookRouter } from './webhooks/router.js';
+
+const app = express();
+app.disable('x-powered-by');
+
+// The webhook receiver must see raw bytes to verify Rain's HMAC, so it is mounted
+// BEFORE the JSON parser. Moving this below express.json() silently breaks signatures.
+app.use('/webhooks', webhookRouter);
+
+app.use(express.json({ limit: '1mb' }));
+
+app.get('/health', (_req, res) => {
+  res.json({
+    ok: true,
+    environment: 'sandbox',
+    baseUrl: config.baseUrl,
+    chainId: config.chainId,
+    signatureEnforced: config.enforceWebhookSignature,
+  });
+});
+
+app.use('/api/companies', companiesRouter);
+app.use('/api', usersRouter);
+app.use('/api', cardsRouter);
+app.use('/api', transactionsRouter);
+app.use('/api', disputesRouter);
+app.use('/api', eventsRouter);
+app.use('/api/simulate', simulateRouter);
+app.use('/api/demo', demoRouter);
+app.use('/api/portal', portalRouter);
+
+// The demo portal, served by this same process. One command on demo day, no build step,
+// no second port, no CORS.
+app.use(express.static(resolve(dirname(fileURLToPath(import.meta.url)), '..', 'public')));
+
+app.use((req, res) => {
+  res.status(404).json({ error: `No route for ${req.method} ${req.path}` });
+});
+
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof RainApiError) {
+    console.error(`[rain] ${err.message}`, err.body);
+    res.status(err.status).json({
+      error: err.message,
+      detail: err.body,
+      ...(err.isSimulatorUnavailable && {
+        hint:
+          'The /simulate endpoints return 404 in production and when the tenant is not enabled ' +
+          'for simulation. Confirm with Rain that simulation is switched on for this sandbox tenant.',
+      }),
+    });
+    return;
+  }
+
+  if (err instanceof HttpError) {
+    res.status(err.status).json({ error: err.message, detail: err.detail });
+    return;
+  }
+
+  console.error('[unhandled]', err);
+  res.status(500).json({ error: err instanceof Error ? err.message : 'Internal error' });
+});
+
+const server = app.listen(config.port, () => {
+  console.log(`\nRain sandbox backend listening on http://localhost:${config.port}`);
+  console.log(`  Rain base URL     ${config.baseUrl}`);
+  console.log(`  Webhook receiver  POST /webhooks/rain`);
+  console.log(`  Event stream      GET  /api/events/stream`);
+  console.log(`  Demo portal       http://localhost:${config.port}/`);
+  console.log(`  Run the demo      POST /api/demo/run   (or: npm run demo)`);
+  if (!config.enforceWebhookSignature) {
+    console.warn('  WARNING: webhook signature checking is disabled.');
+  }
+  if (!config.ownerAddress || /^0x0+$/.test(config.ownerAddress)) {
+    console.warn('  WARNING: RAIN_OWNER_ADDRESS is unset - collateral contract creation will fail.');
+  }
+  console.log('');
+});
+
+/**
+ * A stack trace is the wrong thing to show someone five minutes before a demo. The
+ * common cases are a server already running and a privileged port, so say which.
+ */
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      `\nPort ${config.port} is already in use - the server is probably still running ` +
+        `from an earlier session.\n\n` +
+        `  Check:  lsof -nP -iTCP:${config.port} -sTCP:LISTEN\n` +
+        `  Stop:   pkill -f "tsx src/server.ts"\n` +
+        `  Or run on another port:  PORT=4041 npm start\n`,
+    );
+    process.exit(1);
+  }
+  if (err.code === 'EACCES') {
+    console.error(`\nNot allowed to bind port ${config.port}. Ports below 1024 need elevated rights - use PORT=4040.\n`);
+    process.exit(1);
+  }
+  console.error('\nCould not start the server:', err.message, '\n');
+  process.exit(1);
+});

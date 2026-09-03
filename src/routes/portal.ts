@@ -1,0 +1,139 @@
+import { Router } from 'express';
+import { asyncHandler } from '../lib/async-handler.js';
+import { HttpError } from '../lib/errors.js';
+import { businessProfile } from '../partners/businesses.js';
+import { getPartner, PARTNERS } from '../partners/registry.js';
+import { rain } from '../rain/client.js';
+import { embossedName, holderLabel } from '../rain/names.js';
+import type { IssuingCard, IssuingTransaction } from '../rain/types.js';
+import { db } from '../store/db.js';
+
+export const portalRouter = Router();
+
+/**
+ * Everything the portal needs to draw its navigation: partners and the businesses
+ * grouped beneath them.
+ *
+ * The grouping is Mesta-side. Rain's equivalent is a subtenant, which is not contracted
+ * on this tenant yet, so `rainEnforced` is false and the UI says so rather than implying
+ * an isolation boundary that does not exist.
+ */
+portalRouter.get('/context', (_req, res) => {
+  const businesses = db.get().businesses;
+  res.json({
+    rainEnforced: false,
+    isolationNote:
+      'Partner grouping is maintained by Mesta. Rain subtenants are not contracted on this ' +
+      'sandbox tenant, so Rain sees one program.',
+    partners: PARTNERS.map((p) => ({
+      id: p.id,
+      name: p.name,
+      customerNoun: p.customerNoun,
+      brand: p.brand,
+      design: p.design,
+      // Sorted by name so the picker order is stable regardless of what has been
+      // touched since seeding.
+      businesses: businesses
+        .filter((b) => b.partnerId === p.id)
+        .sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }))
+        .map((b) => ({ companyId: b.companyId, name: b.name, cards: b.cardIds.length })),
+    })),
+  });
+});
+
+/** One business: balances, cardholders, cards, and recent card activity. */
+portalRouter.get(
+  '/business/:companyId',
+  asyncHandler(async (req, res) => {
+    const companyId = req.params.companyId!;
+    const business = db.findBusiness(companyId);
+    if (!business) throw new HttpError(404, 'Unknown business. Run the seed script first.');
+
+    const partner = getPartner(business.partnerId);
+    const profile = businessProfile(business.name);
+
+    // Fetched together so one slow call cannot leave the page half-drawn.
+    const [balances, cards, users, transactions] = await Promise.all([
+      rain.getCompanyBalances(companyId).catch(() => null),
+      rain.listCards({ companyId, limit: 50 }).catch((): IssuingCard[] => []),
+      rain.listUsers({ companyId, limit: 50 }).catch(() => []),
+      rain.listTransactions({ companyId, limit: 25 }).catch((): IssuingTransaction[] => []),
+    ]);
+
+    const holders = new Map(users.map((u) => [u.id, holderLabel(u.firstName, u.lastName)]));
+
+    res.json({
+      business: {
+        companyId,
+        name: business.name,
+        contractId: business.contractId,
+        cardName: profile?.cardName,
+      },
+      partner: partner
+        ? { id: partner.id, name: partner.name, brand: partner.brand, design: partner.design }
+        : null,
+      balances,
+      // Cancelled cards are dead and cannot be revived; showing them clutters the
+      // active set. Rain has no delete, so filtering here is the only way to retire one.
+      cards: cards
+        .filter((c) => c.status !== 'canceled')
+        .map((c) => ({
+        id: c.id,
+        last4: c.last4,
+        status: c.status,
+        type: c.type,
+        limit: c.limit,
+        // Rain returns "3" / "2032"; a card face reads 03/32.
+        expiry: `${String(c.expirationMonth).padStart(2, '0')}/${String(c.expirationYear).slice(-2)}`,
+        holder: holders.get(c.userId) ?? 'Unknown',
+        // Rain does not echo displayName back, so recompute the exact string it holds.
+        embossed: embossedName({
+          businessName: business.name,
+          cardName: profile?.cardName,
+          holder: holders.get(c.userId),
+        }),
+        userId: c.userId,
+        // Rain reports which digital wallets a card is tokenized into. Reporting is
+        // off by default per account, so an empty array does not prove there are none.
+        wallets: c.tokenWallets ?? [],
+        currency: c.configuration?.currency,
+        })),
+      // Employees first, then the signatory who arrived on the application itself, so
+      // the first card issued goes to User 1 rather than to whoever Rain returns first.
+      cardholders: users
+        .map((u) => ({
+          id: u.id,
+          name: holderLabel(u.firstName, u.lastName),
+          email: u.email,
+          isActive: u.isActive,
+        }))
+        .sort((a, b) => {
+          const rank = (n: string) => (/^User\b/.test(n) ? 0 : 1);
+          return rank(a.name) - rank(b.name) ||
+            a.name.localeCompare(b.name, 'en', { numeric: true });
+        }),
+      transactions: transactions
+        .filter((t): t is Extract<IssuingTransaction, { type: 'spend' }> => t.type === 'spend')
+        .map((t) => ({
+          id: t.id,
+          amount: t.spend.amount,
+          currency: t.spend.currency,
+          // Raw merchantName is space-padded to a fixed width; Rain also returns a
+          // cleaned version, which is what a statement would show.
+          merchant:
+            (t.spend as { enrichedMerchantName?: string }).enrichedMerchantName?.trim() ||
+            t.spend.merchantName?.trim() ||
+            '',
+          merchantCity: (t.spend as { merchantCity?: string }).merchantCity?.trim() || undefined,
+          merchantCountry:
+            (t.spend as { merchantCountry?: string }).merchantCountry?.trim() || undefined,
+          mcc: t.spend.merchantCategoryCode,
+          status: t.spend.status,
+          declinedReason: t.spend.declinedReason,
+          cardId: t.spend.cardId,
+          authorizedAt: t.spend.authorizedAt,
+          postedAt: t.spend.postedAt,
+        })),
+    });
+  }),
+);

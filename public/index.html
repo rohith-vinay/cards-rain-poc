@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cards · Aloha · Mesta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark" id="brandPartner">Partner</span>
+      <span class="sub" id="brandBusiness">Business</span>
+      <span class="powered">Powered by Mesta</span>
+    </div>
+
+    <nav>
+      <p class="group">Home</p>
+      <a class="nav" href="#"><span class="ico">▤</span>Dashboard</a>
+
+      <p class="group">Accounts</p>
+      <a class="nav" href="#"><span class="ico">▤</span>Fiat accounts</a>
+      <a class="nav" href="#"><span class="ico">▤</span>Wallets</a>
+      <a class="nav" href="#"><span class="ico">▤</span>Earn</a>
+
+      <p class="group">Cards</p>
+      <a class="nav active" href="#"><span class="ico">▤</span>Cards</a>
+      <a class="nav" href="#"><span class="ico">▤</span>Card transactions</a>
+      <a class="nav" href="#"><span class="ico">▤</span>Controls</a>
+
+      <p class="group">People</p>
+      <a class="nav" href="#"><span class="ico">▤</span>Beneficiaries</a>
+
+      <p class="group">Payments</p>
+      <a class="nav" href="#"><span class="ico">▤</span>Orders</a>
+
+      <p class="group">Account</p>
+      <a class="nav" href="#"><span class="ico">▤</span>Settings</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div class="crumb">
+        <span>Home</span><span class="sep">/</span><span>Cards</span>
+      </div>
+      <div class="ctx">
+        <label class="ctxlabel">Viewing</label>
+        <select id="businessPicker" aria-label="Select business" autocomplete="off"></select>
+      </div>
+    </header>
+
+    <div class="page">
+      <div class="pagehead">
+        <div>
+          <p class="eyebrow" id="partnerLine">Loading…</p>
+          <h1 id="businessName">Cards</h1>
+          <p class="sub" id="subline">Company-funded cards issued to employees.</p>
+        </div>
+        <button class="primary" id="issueBtn">＋ Issue a card</button>
+      </div>
+
+      <section class="tiles" id="tiles"></section>
+
+      <section class="cols">
+        <div class="col">
+          <div class="panel">
+            <div class="panelhead">
+              <h2>Cards</h2>
+              <span class="muted" id="cardCount"></span>
+            </div>
+            <p class="panelnote">The face shows what a cardholder sees &mdash; one name, the last four digits and the expiry. Everything below it is this portal.</p>
+            <div id="cards" class="cardgrid"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panelhead">
+              <h2>Simulate a purchase</h2>
+              <span class="muted">sandbox</span>
+            </div>
+            <form id="spendForm" class="spend">
+              <div class="field">
+                <label for="spendCard">Card</label>
+                <select id="spendCard"></select>
+              </div>
+              <div class="field">
+                <label for="merchant">Merchant</label>
+                <input id="merchant" value="Iron Hill Freightworks" autocomplete="off">
+              </div>
+              <div class="field narrow">
+                <label for="mcc">MCC</label>
+                <input id="mcc" value="4214" inputmode="numeric" autocomplete="off">
+              </div>
+              <div class="field narrow">
+                <label for="amount">Amount</label>
+                <input id="amount" value="612.75" inputmode="decimal" autocomplete="off">
+              </div>
+              <button class="primary" type="submit">Authorize</button>
+            </form>
+            <div id="spendResult" class="spendresult"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panelhead"><h2>Card transactions</h2></div>
+            <div id="txns" class="txns"></div>
+          </div>
+        </div>
+
+        <div class="col side">
+          <div class="panel feed">
+            <div class="panelhead">
+              <h2>Live activity</h2>
+              <span id="feedStatus" class="dot off">offline</span>
+            </div>
+            <p class="feednote">Webhooks from Rain, verified on arrival.</p>
+            <div id="events" class="events"></div>
+          </div>
+        </div>
+      </section>
+
+      <p class="footnote" id="footnote"></p>
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>
