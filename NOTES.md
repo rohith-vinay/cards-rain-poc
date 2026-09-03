@@ -442,3 +442,33 @@ Correlation ids to quote to Rain support: `a06b7824-4cca-43a3-a854-37fce1ee6e26`
 Consequence for the demo: the seeded businesses are funded and card-ready but hold no
 cards, because seeding deliberately leaves issuance as the demo's opening move. Until this
 clears, the issuance beat cannot be shown on the new businesses.
+
+## What the virtual card tile shows, and where each part comes from
+
+Rain accepts exactly one name, `configuration.displayName`, max 26 characters. Everything
+else on the tile is data we already hold and render ourselves.
+
+| On the tile | Source | Passed to Rain? |
+|---|---|---|
+| Partner name | Our partner registry | No - presentation |
+| Status pill | `card.status` from Rain | n/a, read |
+| VISA | Rain is a Visa issuer | n/a |
+| Last four | `card.last4` from Rain | n/a, read |
+| Cardholder name | `displayName`, cleaned of the sandbox token | **Yes - the one name** |
+| Business name | The company the card belongs to | No - presentation |
+| Expiry | `card.expirationMonth` / `Year` from Rain | n/a, read |
+
+This is legitimate because **a virtual card has no printed face**. Whoever displays it
+draws it, and our portal holds all of the above. It is not a claim about embossing.
+
+### Composing both names into the one field was tested and rejected
+
+Putting holder and business into the single 26-character field mangles five of seven
+business names: `User 1 - TRUST AIR CARGO U`, `User 1 - GLOBER SERVICOS F`. Only GB Sales
+LLC and Palomita Holdings survive intact. Holder-only stays.
+
+### The one place our layout does not carry
+
+If a card is tokenized into Apple or Google Wallet, the wallet renders it from Rain's
+card art and the network name - so it shows the cardholder name alone. The business line
+exists in our portal, not in the wallet.
