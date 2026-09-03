@@ -230,7 +230,14 @@ async function selectBusiness(companyId) {
   // and the person using it belongs to the business.
   $('brandPartner').textContent = data.partner?.name ?? 'Mesta';
   $('brandBusiness').textContent = data.business.name;
-  $('subline').textContent = `${data.cardholders.length} cardholders · company-funded collateral`;
+  // "cardholders" read as "people holding cards", which is wrong before any are
+  // issued. These are people who *may* hold one; cards are issued separately.
+  const people = data.cardholders.length;
+  const issued = data.cards.length;
+  const cardText =
+    issued === 0 ? 'no cards issued yet' : `${issued} card${issued === 1 ? '' : 's'} issued`;
+  $('subline').textContent =
+    `${people} ${people === 1 ? 'person' : 'people'} · ${cardText} · pre-funded collateral`;
   if (data.partner) document.documentElement.style.setProperty('--accent', data.partner.brand.accent);
 
   renderTiles(data.balances);

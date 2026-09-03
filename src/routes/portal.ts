@@ -98,12 +98,20 @@ portalRouter.get(
         wallets: c.tokenWallets ?? [],
         currency: c.configuration?.currency,
         })),
-      cardholders: users.map((u) => ({
-        id: u.id,
-        name: holderLabel(u.firstName, u.lastName),
-        email: u.email,
-        isActive: u.isActive,
-      })),
+      // Employees first, then the signatory who arrived on the application itself, so
+      // the first card issued goes to User 1 rather than to whoever Rain returns first.
+      cardholders: users
+        .map((u) => ({
+          id: u.id,
+          name: holderLabel(u.firstName, u.lastName),
+          email: u.email,
+          isActive: u.isActive,
+        }))
+        .sort((a, b) => {
+          const rank = (n: string) => (/^User\b/.test(n) ? 0 : 1);
+          return rank(a.name) - rank(b.name) ||
+            a.name.localeCompare(b.name, 'en', { numeric: true });
+        }),
       transactions: transactions
         .filter((t): t is Extract<IssuingTransaction, { type: 'spend' }> => t.type === 'spend')
         .map((t) => ({
