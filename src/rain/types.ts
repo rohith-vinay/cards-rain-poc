@@ -237,6 +237,10 @@ export interface SpendTransaction {
     authorizedAmount?: number;
     memo?: string;
     merchantName: string;
+    /** Rain's cleaned merchant name; the raw one is space-padded. */
+    enrichedMerchantName?: string;
+    merchantCity?: string;
+    merchantCountry?: string;
     merchantCategory: string;
     merchantCategoryCode: string;
     cardId: string;

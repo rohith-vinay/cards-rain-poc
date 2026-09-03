@@ -498,3 +498,43 @@ A caption above the card grid says so on screen.
 
 If the business name should appear on the physical card, it has to be part of the
 **artwork** commissioned with Rain - it is not an API field.
+
+## Portal vs Rain: field-level sync check (2026-09-03)
+
+Compared what the portal renders against a real card object and a real spend transaction.
+
+### Corrected
+
+| Was | Now | Why |
+|---|---|---|
+| Expiry `3/2032` | `03/32` | Rain returns unpadded month and a four-digit year; a card face reads MM/YY |
+| Raw `merchantName` | `enrichedMerchantName` when present | The raw value is space-padded to a fixed width - `"Health Check             "` |
+| `tokenWallets` unused | Rendered as chips | Rain reports which wallets a card is tokenized into; this is what decides what someone sees in Apple or Google Pay |
+
+### What Rain actually returns on a card
+
+```json
+{ "id", "userId", "type", "status", "last4",
+  "expirationMonth": "3", "expirationYear": "2032",
+  "limit": { "amount", "frequency" },
+  "configuration": { "currency": "usd" },
+  "tokenWallets": [], "createdAt", "updatedAt" }
+```
+
+Three gaps worth knowing:
+
+1. **`displayName` is not returned.** Rain accepts it on create but the card object does
+   not echo it, so the name the portal shows is the one we sent, not one read back. If it
+   were ever changed out of band we would not know.
+2. **`companyId` is absent**, though the spec marks it required on `IssuingCard`. We never
+   depend on it - cards are fetched by company - but the spec is wrong again.
+3. **`configuration` carries only `currency`.** The spec documents `scheme` and `rail` too;
+   neither is populated. The Visa mark on the face is therefore hardcoded. It is correct -
+   Rain issues on Visa - but it is not data-driven, and a debit or prepaid programme would
+   not be distinguishable from the response.
+
+### Available on transactions, not yet shown
+
+`merchantCity`, `merchantCountry`, `localAmount` and `localCurrency` for cross-currency
+spend, `authorizationMethod`, `authorizedAmount`, and `isForcePosted`. Now passed through
+the portal API for city and country; the rest remain unused.

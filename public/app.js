@@ -102,6 +102,13 @@ function renderCards(cards, partner, businessName) {
           <span class="who">${c.holder}</span>
           <span class="statuschip ${c.status}">${c.status}</span>
         </div>
+        ${
+          c.wallets?.length
+            ? `<div class="wallets">${c.wallets
+                .map((w) => `<span class="wallet">${w}</span>`)
+                .join('')}</div>`
+            : ''
+        }
         <div class="cardmeta">
           <span class="sub">${businessName ?? ''}</span>
           <span class="lim">${limitLabel(c.limit)}</span>

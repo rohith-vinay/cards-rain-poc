@@ -72,9 +72,14 @@ portalRouter.get(
         status: c.status,
         type: c.type,
         limit: c.limit,
-        expiry: `${c.expirationMonth}/${c.expirationYear}`,
+        // Rain returns "3" / "2032"; a card face reads 03/32.
+        expiry: `${String(c.expirationMonth).padStart(2, '0')}/${String(c.expirationYear).slice(-2)}`,
         holder: holders.get(c.userId) ?? 'Unknown',
         userId: c.userId,
+        // Rain reports which digital wallets a card is tokenized into. Reporting is
+        // off by default per account, so an empty array does not prove there are none.
+        wallets: c.tokenWallets ?? [],
+        currency: c.configuration?.currency,
       })),
       cardholders: users.map((u) => ({
         id: u.id,
@@ -88,7 +93,15 @@ portalRouter.get(
           id: t.id,
           amount: t.spend.amount,
           currency: t.spend.currency,
-          merchant: t.spend.merchantName?.trim() ?? '',
+          // Raw merchantName is space-padded to a fixed width; Rain also returns a
+          // cleaned version, which is what a statement would show.
+          merchant:
+            (t.spend as { enrichedMerchantName?: string }).enrichedMerchantName?.trim() ||
+            t.spend.merchantName?.trim() ||
+            '',
+          merchantCity: (t.spend as { merchantCity?: string }).merchantCity?.trim() || undefined,
+          merchantCountry:
+            (t.spend as { merchantCountry?: string }).merchantCountry?.trim() || undefined,
           mcc: t.spend.merchantCategoryCode,
           status: t.spend.status,
           declinedReason: t.spend.declinedReason,
