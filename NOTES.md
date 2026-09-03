@@ -443,6 +443,8 @@ Consequence for the demo: the seeded businesses are funded and card-ready but ho
 cards, because seeding deliberately leaves issuance as the demo's opening move. Until this
 clears, the issuance beat cannot be shown on the new businesses.
 
+## The card face now mirrors a real card (superseded by the entry below)
+
 ## What the virtual card tile shows, and where each part comes from
 
 Rain accepts exactly one name, `configuration.displayName`, max 26 characters. Everything
@@ -472,3 +474,27 @@ LLC and Palomita Holdings survive intact. Holder-only stays.
 If a card is tokenized into Apple or Google Wallet, the wallet renders it from Rain's
 card art and the network name - so it shows the cardholder name alone. The business line
 exists in our portal, not in the wallet.
+
+## The card face mirrors what a cardholder actually sees
+
+Revised after asking what a physical card or a wallet-tokenized card is allowed to show.
+The face now carries only what survives into the real world:
+
+| On the face | Why |
+|---|---|
+| Partner branding | This is the artwork - `productRef` for physical, `virtualCardArt` for virtual |
+| Visa mark | Rain issues on Visa |
+| Last four | Stands in for the PAN, which we cannot show without the session key exchange |
+| **One name** | `configuration.displayName`, max 26 characters. All an embosser or a wallet will render |
+| Expiry | Printed on every card |
+
+Moved **off** the face, because a real card does not carry them: the **status**, now a chip
+below, and the **business name**, now a line of portal chrome under the card.
+
+This matters because the portal sets an expectation the physical card has to meet. A card
+in Apple or Google Wallet is drawn from Rain's artwork plus the network name, so anything
+the portal shows on the face that Rain cannot print would read as a broken promise later.
+A caption above the card grid says so on screen.
+
+If the business name should appear on the physical card, it has to be part of the
+**artwork** commissioned with Rain - it is not an API field.

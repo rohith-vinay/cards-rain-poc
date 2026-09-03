@@ -189,6 +189,7 @@ button.small { padding: 5px 10px; font-size: 12.5px; }
 .muted { color: var(--ink-3); font-size: 12.5px; }
 
 /* ---------- cards ---------- */
+.panelnote { margin: 0; padding: 12px 18px; font-size: 12.5px; color: var(--ink-3); border-bottom: 1px solid var(--line-soft); }
 .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); gap: 14px; padding: 18px; }
 .cardtile { display: flex; flex-direction: column; gap: 10px; }
 .face {
@@ -203,30 +204,28 @@ button.small { padding: 5px 10px; font-size: 12.5px; }
   overflow: hidden;
 }
 .face.locked { filter: grayscale(0.85) brightness(0.82); }
-.face .brandrow { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; opacity: 0.95; }
+.face .brandrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; opacity: 0.95; }
 .face .brandrow .pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .face .brandrow .scheme { letter-spacing: 0.08em; }
 .face .pan { font-family: var(--mono); font-size: 16px; letter-spacing: 0.13em; }
 .face .meta { display: flex; justify-content: space-between; align-items: flex-end; font-family: var(--mono); gap: 10px; min-width: 0; }
-.face .meta .owner { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.face .meta .holder { font-size: 11.5px; letter-spacing: 0.09em; font-weight: 600; opacity: 0.96; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Legal names run long - "GLOBER SERVICOS FINANCEIROS LTDA" is 32 characters - so let
-   this wrap to a second line rather than truncating the business out of recognition. */
-.face .meta .biz {
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  line-height: 1.3;
-  opacity: 0.74;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+.face .meta .holder { font-size: 12px; letter-spacing: 0.1em; font-weight: 600; opacity: 0.97; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .face .meta .exp { font-size: 11px; opacity: 0.85; white-space: nowrap; }
-.statustag { font-size: 9px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; background: rgba(255,255,255,0.24); white-space: nowrap; }
-.cardmeta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* Status is not printed on a card, so it lives below the face as a chip. */
+.statuschip {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap;
+}
+.statuschip.active { color: var(--good); border-color: #CDE9DC; background: #ECF7F1; }
+.statuschip.locked { color: var(--warn); border-color: #EBD6B4; background: #FCF6EC; }
+.statuschip.canceled, .statuschip.notActivated { color: var(--ink-3); border-color: var(--line); background: var(--line-soft); }
+.cardmeta { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.cardmeta .sub {
+  font-size: 11.5px; color: var(--ink-3); line-height: 1.35; min-width: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .cardmeta .who { font-size: 13px; font-weight: 600; }
-.cardmeta .lim { font-size: 12px; color: var(--ink-3); font-family: var(--mono); }
+.cardmeta .lim { font-size: 12px; color: var(--ink-3); font-family: var(--mono); white-space: nowrap; flex: none; }
 .cardactions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ---------- spend form ---------- */

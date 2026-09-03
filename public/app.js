@@ -80,26 +80,30 @@ function renderCards(cards, partner, businessName) {
   $('cards').innerHTML = cards
     .map((c) => {
       const locked = c.status !== 'active';
+      // The face carries only what a real card carries: the artwork, the network mark,
+      // the digits, ONE name and the expiry. Rain accepts a single 26-character name, and
+      // a wallet or an embosser will show that and nothing else. Everything else about
+      // the card is portal chrome and sits below the face.
       return `
       <div class="cardtile">
         <div class="face ${locked ? 'locked' : ''}"
              style="background:linear-gradient(135deg,${brand.cardFrom},${brand.cardTo});color:${brand.cardInk}">
           <div class="brandrow">
             <span class="pname">${partner?.name ?? 'Mesta'}</span>
-            <span class="statustag">${c.status}</span>
             <span class="scheme">VISA</span>
           </div>
           <div class="pan">•••• ${c.last4}</div>
           <div class="meta">
-            <span class="owner">
-              <span class="holder">${c.holder.toUpperCase()}</span>
-              <span class="biz">${(businessName ?? '').toUpperCase()}</span>
-            </span>
+            <span class="holder">${c.holder.toUpperCase()}</span>
             <span class="exp">${c.expiry}</span>
           </div>
         </div>
         <div class="cardmeta">
           <span class="who">${c.holder}</span>
+          <span class="statuschip ${c.status}">${c.status}</span>
+        </div>
+        <div class="cardmeta">
+          <span class="sub">${businessName ?? ''}</span>
           <span class="lim">${limitLabel(c.limit)}</span>
         </div>
         <div class="cardactions">
