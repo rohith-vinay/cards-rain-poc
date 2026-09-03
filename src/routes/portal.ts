@@ -87,7 +87,11 @@ portalRouter.get(
         expiry: `${String(c.expirationMonth).padStart(2, '0')}/${String(c.expirationYear).slice(-2)}`,
         holder: holders.get(c.userId) ?? 'Unknown',
         // Rain does not echo displayName back, so recompute the exact string it holds.
-        embossed: embossedName(profile?.cardName, holders.get(c.userId) ?? ''),
+        embossed: embossedName({
+          businessName: business.name,
+          cardName: profile?.cardName,
+          holder: holders.get(c.userId),
+        }),
         userId: c.userId,
         // Rain reports which digital wallets a card is tokenized into. Reporting is
         // off by default per account, so an empty array does not prove there are none.

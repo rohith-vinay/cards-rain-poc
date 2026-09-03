@@ -48,24 +48,57 @@ export function cardDisplayName(firstName: string, lastName: string): string {
 }
 
 /**
- * The single name Rain will carry: the business's short trading name followed by the
- * cardholder. Rain allows 26 characters and only letters, digits, spaces, periods and
- * hyphens, so this uppercases, strips anything else, and protects the cardholder's name
- * if the pair ever runs long.
+ * How the one name Rain carries is composed.
+ *
+ * Rain does not require the cardholder's name. `configuration.displayName` is optional:
+ * omit it and Rain falls back to the user's profile name, set it and Rain uses exactly
+ * what you send, with no check that it matches the person. So a corporate programme can
+ * put the business on the card instead - which is how most corporate cards read.
+ *
+ * Rain documents the field as a cardholder name whose purpose is transliterating
+ * non-Latin names, so using it for a company is outside its documented intent even
+ * though nothing rejects it. Worth confirming with Rain before a live programme.
  */
-export function embossedName(cardName: string | undefined, holder: string): string {
-  const strip = (v: string) =>
-    v.replace(/[^A-Za-z0-9 .-]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+export type CardNameMode = 'business' | 'business+holder' | 'holder';
 
-  const person = strip(holder);
-  if (!cardName) return person.slice(0, 26).trim();
+const strip = (v: string) =>
+  v.replace(/[^A-Za-z0-9 .-]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
 
-  const business = strip(cardName);
-  const combined = `${business} ${person}`;
-  if (combined.length <= 26) return combined;
+const LIMIT = 26;
 
-  // Never truncate the cardholder - shorten the business instead, and drop it entirely
-  // rather than leave an unrecognisable stub.
-  const room = 26 - person.length - 1;
-  return room >= 4 ? `${business.slice(0, room).trim()} ${person}` : person.slice(0, 26);
+export interface CardNameInput {
+  /** Registered name, preferred when it fits. */
+  businessName?: string;
+  /** Short trading name, used when the registered one is too long. */
+  cardName?: string;
+  /** The cardholder, already stripped of the sandbox status token. */
+  holder?: string;
+}
+
+/**
+ * The exact string sent as `configuration.displayName`, capped at Rain's 26 characters
+ * and its `[A-Za-z0-9 .-]` character set.
+ */
+export function embossedName(
+  input: CardNameInput,
+  mode: CardNameMode = (process.env.CARD_NAME_MODE as CardNameMode) || 'business',
+): string {
+  const person = strip(input.holder ?? '');
+  const registered = strip(input.businessName ?? '');
+  const trading = strip(input.cardName ?? '');
+  // Prefer the registered name; fall back to the trading name only when it will not fit.
+  const business = registered && registered.length <= LIMIT ? registered : trading || registered;
+
+  if (mode === 'holder' || !business) return person.slice(0, LIMIT).trim();
+  if (mode === 'business') return business.slice(0, LIMIT).trim();
+
+  if (!person) return business.slice(0, LIMIT).trim();
+  const short = trading || business;
+  const combined = `${short} ${person}`;
+  if (combined.length <= LIMIT) return combined;
+
+  // Never truncate the cardholder - shorten the business, or drop it rather than leave
+  // an unrecognisable stub.
+  const room = LIMIT - person.length - 1;
+  return room >= 4 ? `${short.slice(0, room).trim()} ${person}` : person.slice(0, LIMIT);
 }

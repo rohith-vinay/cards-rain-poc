@@ -48,9 +48,11 @@ cardsRouter.post(
     // status token so it reads "TRUST AIR USER 1", not "User 1Approved".
     const holder = await rain.getUser(req.params.userId!).catch(() => null);
     const profile = business ? businessProfile(business.name) : undefined;
-    const displayName = holder
-      ? embossedName(profile?.cardName, holderLabel(holder.firstName, holder.lastName))
-      : undefined;
+    const displayName = embossedName({
+      businessName: business?.name,
+      cardName: profile?.cardName,
+      holder: holder ? holderLabel(holder.firstName, holder.lastName) : undefined,
+    });
 
     const card = await rain.createCard(req.params.userId!, {
       type,

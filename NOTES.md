@@ -572,3 +572,28 @@ rather than the cardholder - a truncated person's name is worse than a truncated
 
 Because Rain does not echo `displayName` back on the card object, the portal recomputes
 the identical string for display. The card face therefore shows exactly what Rain holds.
+
+## Is the cardholder's name required on the card? No.
+
+`configuration.displayName` is **optional**. Omit it and Rain falls back to the user's
+profile name; set it and Rain uses exactly what you send, with no check that it matches
+the person. A corporate programme can therefore put the business on the card instead.
+
+Caveat worth raising with Rain before going live: their docs describe the field as a
+cardholder name whose stated purpose is transliterating non-Latin names, and say the value
+"goes to the card network and appears in card records". Using it for a company name is
+outside that documented intent even though nothing rejects it.
+
+### Three modes, set by `CARD_NAME_MODE`
+
+| Mode | Produces |
+|---|---|
+| `business` (default) | `TRUST AIR CARGO U.S.A. CO.` - registered name, or the trading name when it will not fit |
+| `business+holder` | `TRUST AIR MARIA SANTOS` |
+| `holder` | `MARIA SANTOS` - Rain's own default |
+
+Six of the seven businesses fit their **full registered name** inside 26 characters. Only
+GLOBER SERVICOS FINANCEIROS LTDA (32) falls back to its trading name.
+
+All three modes verified to stay within 26 characters and `[A-Za-z0-9 .-]` for every
+business. In `business+holder`, the business is shortened before the cardholder ever is.
