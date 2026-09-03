@@ -200,7 +200,10 @@ async function selectBusiness(companyId) {
   url.searchParams.set('business', data.business.name.replace(/\s+/g, ''));
   history.replaceState(null, '', url);
   $('partnerLine').textContent = data.partner ? `${data.partner.name} · partner` : 'Direct';
-  $('partnerChip').textContent = data.partner?.name ?? '—';
+  // The sidebar carries the white-label identity: this portal belongs to the partner,
+  // and the person using it belongs to the business.
+  $('brandPartner').textContent = data.partner?.name ?? 'Mesta';
+  $('brandBusiness').textContent = data.business.name;
   $('subline').textContent = `${data.cardholders.length} cardholders · company-funded collateral`;
   if (data.partner) document.documentElement.style.setProperty('--accent', data.partner.brand.accent);
 

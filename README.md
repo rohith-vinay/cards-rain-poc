@@ -61,8 +61,10 @@ collateral crediting — happen well before an audience.
 
 ### Two businesses side by side
 
-The portal serves every business from one port — the picker is a demo convenience, not an
-Aloha feature (a real Aloha user's business comes from their login). To show two partners
+The portal is white-labelled per partner: the sidebar carries the partner name in that
+partner's colour with the business beneath it, so each window reads as that partner's own
+sender portal. It still serves every business from one port — the picker is a demo
+convenience, not an Aloha feature (a real Aloha user's business comes from their login). To show two partners
 at once, open two browser windows against the same server and deep-link each one:
 
 ```
