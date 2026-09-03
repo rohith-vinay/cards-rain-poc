@@ -66,7 +66,11 @@ portalRouter.get(
         ? { id: partner.id, name: partner.name, brand: partner.brand, design: partner.design }
         : null,
       balances,
-      cards: cards.map((c) => ({
+      // Cancelled cards are dead and cannot be revived; showing them clutters the
+      // active set. Rain has no delete, so filtering here is the only way to retire one.
+      cards: cards
+        .filter((c) => c.status !== 'canceled')
+        .map((c) => ({
         id: c.id,
         last4: c.last4,
         status: c.status,
@@ -80,7 +84,7 @@ portalRouter.get(
         // off by default per account, so an empty array does not prove there are none.
         wallets: c.tokenWallets ?? [],
         currency: c.configuration?.currency,
-      })),
+        })),
       cardholders: users.map((u) => ({
         id: u.id,
         name: holderLabel(u.firstName, u.lastName),
