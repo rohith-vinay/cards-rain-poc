@@ -327,3 +327,32 @@ These run in `npm run demo` (the CLI script) or exist as API routes only:
 - `GET /issuing/webhooks`, `GET/PATCH /issuing/webhooks/configuration`
 - `POST /issuing/companies/{id}/contracts` - contract creation (Rain assigns one on approval,
   so the portal only reads)
+
+## Disputes: created over the API but absent from Rain's dashboard (open with Rain)
+
+Observed 2026-09-02. A dispute raised through the API is accepted and readable, but does
+not appear in Rain's dispute portal, and Rain never sends the `dispute.created` webhook
+that its own changelog documents.
+
+What was verified on our side:
+
+- `POST /issuing/transactions/{id}/disputes` returns `200` with an id and `status: pending`.
+- The dispute is readable via `GET /issuing/disputes` and `GET /issuing/disputes/{id}`.
+- The underlying transaction is genuinely settled: `status: completed`, `postedAt` set.
+- The amount is well above the filing threshold. Rain does not file disputes of $10 or
+  under, and from 1 September 2026 does not file anything under $30 - ours were $84.20
+  and $250.00.
+- Evidence attaches successfully: `PUT /issuing/disputes/{id}/evidence` returns `204` and
+  `hasFileEvidence` flips to true. Status stays `pending`.
+- Webhook configuration is `{}`, and other event families (transaction, card, user,
+  company, contract) are all delivered - so nothing is filtering dispute events out.
+- Rain's own delivery log (`GET /issuing/webhooks`) records zero dispute deliveries, so
+  the event is not being generated rather than lost in transit.
+
+Leading hypothesis: disputes raised against **simulator-created** transactions are
+recorded but never escalated into the operational workflow, because there is no real card
+network transaction to file a chargeback against. `pending` would then mean "accepted, not
+triaged", and the dashboard would only list disputes that reached the network.
+
+Unresolved. Needs a question to Rain: does a sandbox dispute against a simulated
+transaction ever leave `pending`, appear in the dashboard, or emit `dispute.created`?
