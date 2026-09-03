@@ -14,26 +14,69 @@ import { pollUntil } from '../lib/poll.js';
 import { PARTNERS } from '../partners/registry.js';
 import { rain } from '../rain/client.js';
 import { documentForm } from '../rain/document.js';
-import { corporateApplication } from '../rain/fixtures.js';
+import {
+  corporateApplication,
+  NAICS_AIR_FREIGHT,
+  NAICS_COURIERS,
+  NAICS_INVESTMENT_ADVICE,
+  NAICS_PAYMENT_PROCESSING,
+  NAICS_PORTFOLIO_MANAGEMENT,
+  NAICS_SOFTWARE_PUBLISHERS,
+} from '../rain/fixtures.js';
 import { TERMINAL_APPLICATION_STATUSES } from '../rain/types.js';
 import { db, type SeededBusiness } from '../store/db.js';
 
 /**
- * Deliberately plain labels: in a demo the hierarchy should read itself, so Business A1
- * is obviously one of Partner A's businesses without anyone having to explain it.
+ * The businesses each partner onboards. The trading name is what the portal shows; the
+ * legal name and NAICS code go to Rain on the application, so each one reads like a real
+ * entity in its partner's sector rather than a placeholder.
  */
-const BUSINESS_NAMES: Record<string, string[]> = {
-  'partner-a': ['Business A1', 'Business A2', 'Business A3'],
-  'partner-b': ['Business B1', 'Business B2'],
-  'partner-c': ['Business C1'],
+interface SeedBusiness {
+  name: string;
+  entityName: string;
+  industry: string;
+}
+
+const BUSINESSES: Record<string, SeedBusiness[]> = {
+  'partner-cargobill': [
+    {
+      name: 'TRUST AIR CARGO U.S.A. CO.',
+      entityName: 'Trust Air Cargo U.S.A. Co.',
+      industry: NAICS_AIR_FREIGHT,
+    },
+    {
+      name: 'COGO UNIVERSE PTE. LTD.',
+      entityName: 'Cogo Universe Pte. Ltd.',
+      industry: NAICS_COURIERS,
+    },
+    {
+      name: 'Galleon Technology, Inc.',
+      entityName: 'Galleon Technology, Inc.',
+      industry: NAICS_SOFTWARE_PUBLISHERS,
+    },
+  ],
+  'partner-abra': [
+    { name: 'GB Sales LLC', entityName: 'GB Sales LLC', industry: NAICS_PORTFOLIO_MANAGEMENT },
+    {
+      name: 'Moxley Group Limited',
+      entityName: 'Moxley Group Limited',
+      industry: NAICS_INVESTMENT_ADVICE,
+    },
+  ],
+  'partner-maksupay': [
+    {
+      name: 'GLOBER SERVICOS FINANCEIROS LTDA',
+      entityName: 'Glober Servicos Financeiros Ltda',
+      industry: NAICS_PAYMENT_PROCESSING,
+    },
+    {
+      name: 'Palomita Holdings',
+      entityName: 'Palomita Holdings',
+      industry: NAICS_PAYMENT_PROCESSING,
+    },
+  ],
 };
 
-/**
- * Cardholders are User 1..N so ownership reads straight off the card: Partner A,
- * Business A1, User 1. The "Approved" suffix stays on the last name because Rain drives
- * the employee's KYC outcome from it - without it they sit at `pending` and card
- * issuance fails with 403. It is stripped for display.
- */
 const EMPLOYEES_PER_BUSINESS = 2;
 const employees = () =>
   Array.from({ length: EMPLOYEES_PER_BUSINESS }, (_, i) => ({
@@ -48,18 +91,21 @@ const FUNDING = fundingArg ? Number(fundingArg.split('=')[1]) : 5_000_000;
 
 async function seedBusiness(
   partnerId: string,
-  displayName: string,
+  business: SeedBusiness,
   index: number,
 ): Promise<SeededBusiness | null> {
+  const { name: displayName, entityName, industry } = business;
   const nonce = `${Date.now().toString(36)}${index}`;
-  const label = `${displayName}`;
-  process.stdout.write(`  ${label.padEnd(32)}`);
+  process.stdout.write(`  ${displayName.padEnd(34)}`);
 
   try {
     // 1. KYB. The status token has to be in the COMPANY name for corporate applications.
     const application = corporateApplication({
       status: 'approved',
+      // The trading name has to carry the sandbox status token; the legal name does not.
       companyName: `${displayName} Approved ${nonce.toUpperCase()}`,
+      entityName,
+      industry,
       walletAddress: config.ownerAddress,
       nonce,
     });
@@ -168,8 +214,8 @@ let index = 0;
 
 for (const partner of PARTNERS) {
   console.log(`${partner.name}`);
-  for (const name of BUSINESS_NAMES[partner.id] ?? []) {
-    const result = await seedBusiness(partner.id, name, index++);
+  for (const business of BUSINESSES[partner.id] ?? []) {
+    const result = await seedBusiness(partner.id, business, index++);
     result ? ok++ : failed++;
   }
   console.log('');

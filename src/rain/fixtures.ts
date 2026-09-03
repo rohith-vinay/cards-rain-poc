@@ -41,6 +41,10 @@ export const NAICS_TRUCKING_LONG_DISTANCE = '484121'; // General Freight Truckin
 export const NAICS_COURIERS = '492110'; // Couriers and Express Delivery Services
 export const NAICS_SOFTWARE_PUBLISHERS = '513210'; // Software Publishers
 export const NAICS_MANAGEMENT_CONSULTING = '541611'; // Administrative Management Consulting
+export const NAICS_PORTFOLIO_MANAGEMENT = '523940'; // Portfolio Management
+export const NAICS_INVESTMENT_ADVICE = '523930'; // Investment Advice
+export const NAICS_PAYMENT_PROCESSING = '522320'; // Financial Transactions Processing
+export const NAICS_AIR_FREIGHT = '481112'; // Scheduled Freight Air Transportation
 
 const HQ: PhysicalAddress = {
   line1: '450 Mission Street',
@@ -75,6 +79,13 @@ export interface CompanyFixtureOptions {
   /** Status every person on the application is driven to. */
   status?: ApplicationStatus;
   companyName?: string;
+  /**
+   * Registered legal name. Kept separate from `companyName` because the trading name
+   * carries the sandbox status token, and "Acme Approved X7K Inc." is not a legal entity.
+   */
+  entityName?: string;
+  /** 6-digit NAICS code. Rain rejects anything else. */
+  industry?: string;
   /** Rain-managed corporate contracts need an owner wallet on the initial user. */
   walletAddress?: string;
   /** Unique suffix so repeated demo runs do not collide on email addresses. */
@@ -110,10 +121,10 @@ export function corporateApplication(
       isTermsOfServiceAccepted: true,
     },
     entity: {
-      name: `${companyName} Inc.`,
+      name: opts.entityName ?? `${companyName} Inc.`,
       type: 'C Corp',
       description: 'Freight brokerage and last-mile logistics for regional retailers.',
-      industry: NAICS_FREIGHT_BROKERAGE,
+      industry: opts.industry ?? NAICS_FREIGHT_BROKERAGE,
       registrationNumber: `REG-${nonce.toUpperCase()}`,
       taxId: '87-1234567',
       website: `https://${domain}`,

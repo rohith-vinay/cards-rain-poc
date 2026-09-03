@@ -43,48 +43,51 @@ export interface Partner {
 
 export const PARTNERS: Partner[] = [
   {
-    id: 'partner-a',
-    name: 'Partner A',
-    customerNoun: 'business',
+    id: 'partner-cargobill',
+    name: 'CargoBill Inc.',
+    customerNoun: 'shipper',
     design: {
-      virtualCardArt: 'partner-a-virtual-v1',
-      productRef: 'partner-a-physical-v1',
+      virtualCardArt: 'cargobill-virtual-v1',
+      productRef: 'cargobill-physical-v1',
     },
+    // Aviation navy - freight and logistics.
     brand: {
-      accent: '#2F5DD6',
-      cardFrom: '#1E3A8A',
-      cardTo: '#3B6FE0',
-      cardInk: '#F2F6FF',
+      accent: '#1D4E9B',
+      cardFrom: '#0F3369',
+      cardTo: '#2C68C6',
+      cardInk: '#EEF4FF',
     },
   },
   {
-    id: 'partner-b',
-    name: 'Partner B',
-    customerNoun: 'business',
+    id: 'partner-abra',
+    name: 'ABRA Capital Management, LP',
+    customerNoun: 'portfolio company',
     design: {
-      virtualCardArt: 'partner-b-virtual-v1',
-      productRef: 'partner-b-physical-v1',
+      virtualCardArt: 'abra-virtual-v1',
+      productRef: 'abra-physical-v1',
     },
+    // Oxblood - reads as asset management rather than tech.
     brand: {
-      accent: '#0E7C66',
-      cardFrom: '#0B5A4A',
-      cardTo: '#16A085',
-      cardInk: '#EEFBF7',
+      accent: '#8C2B45',
+      cardFrom: '#5C1628',
+      cardTo: '#A83B57',
+      cardInk: '#FDF0F3',
     },
   },
   {
-    id: 'partner-c',
-    name: 'Partner C',
-    customerNoun: 'business',
+    id: 'partner-maksupay',
+    name: 'MaksuPay LLC',
+    customerNoun: 'merchant',
     design: {
-      virtualCardArt: 'partner-c-virtual-v1',
-      productRef: 'partner-c-physical-v1',
+      virtualCardArt: 'maksupay-virtual-v1',
+      productRef: 'maksupay-physical-v1',
     },
+    // Emerald - payments.
     brand: {
-      accent: '#6D3FC4',
-      cardFrom: '#4C2A8C',
-      cardTo: '#7C4DDB',
-      cardInk: '#F5F0FF',
+      accent: '#0B7A5F',
+      cardFrom: '#054A3B',
+      cardTo: '#11A37F',
+      cardInk: '#EBFAF4',
     },
   },
 ];

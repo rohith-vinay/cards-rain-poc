@@ -182,12 +182,14 @@ async function loadContext() {
     const norm = (v) => v.replace(/\s+/g, '').toLowerCase();
     const key = norm(wanted);
     const all = ctx.partners.flatMap((p) => p.businesses);
-    // Accept a company id, the full name, or just the short code: B1, businessB1 and
-    // "Business B1" all resolve to the same business.
+    // Accept a company id, the full name, or any distinctive fragment of it, so
+    // ?business=galleon reaches "Galleon Technology, Inc." without anyone typing
+    // the punctuation.
     const match =
       all.find((b) => b.companyId === wanted) ??
       all.find((b) => norm(b.name) === key) ??
-      all.find((b) => norm(b.name).endsWith(key));
+      all.find((b) => norm(b.name).startsWith(key)) ??
+      all.find((b) => norm(b.name).includes(key));
     if (match) picker.value = match.companyId;
     else toast(`No business matching "${wanted}" — showing the first one instead.`, true);
   }

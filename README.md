@@ -52,10 +52,17 @@ Seeding **replaces** the local business list each run — every run creates new 
 in Rain, so appending would leave the picker showing two of everything. Pass `--append`
 to keep what is already there. Nothing is ever deleted on Rain's side.
 
-`npm run seed` creates three partners and six businesses — Partner A with Business A1, A2
-and A3; Partner B with B1 and B2; Partner C with C1 — funds every one with $50,000 of
-simulated collateral, and adds cardholders. The labels are deliberately plain so the
-hierarchy reads itself on screen. It refuses to mark a business ready until
+`npm run seed` creates three partners and seven businesses, funds every one with $50,000
+of simulated collateral, and adds cardholders:
+
+| Partner | Businesses | Card |
+|---|---|---|
+| **CargoBill Inc.** | Trust Air Cargo U.S.A., Cogo Universe Pte., Galleon Technology | navy |
+| **ABRA Capital Management, LP** | GB Sales LLC, Moxley Group Limited | oxblood |
+| **MaksuPay LLC** | Glober Servicos Financeiros, Palomita Holdings | emerald |
+
+Each business is registered with a legal entity name and a NAICS code appropriate to its
+partner's sector, so the applications read like real ones rather than fixtures. It refuses to mark a business ready until
 spending power is confirmed above zero, so the slow and occasionally flaky parts — KYB and
 collateral crediting — happen well before an audience.
 
@@ -68,11 +75,13 @@ convenience, not an Aloha feature (a real Aloha user's business comes from their
 at once, open two browser windows against the same server and deep-link each one:
 
 ```
-http://localhost:4040/?business=A1     # Partner A, blue cards
-http://localhost:4040/?business=B1     # Partner B, green cards
+http://localhost:4040/?business=trustair   # CargoBill, navy cards
+http://localhost:4040/?business=gbsales    # ABRA Capital, oxblood cards
+http://localhost:4040/?business=glober     # MaksuPay, emerald cards
 ```
 
-`business` accepts the short code (`B1`), the full name (`Business B1`) or the company id.
+`business` accepts the company id, the full name, or any distinctive fragment of it — so
+`galleon` reaches "Galleon Technology, Inc." without typing the punctuation.
 Each window keeps its own selection, sets its own tab title, and updates its URL as you
 switch, so a refresh lands you back where you were.
 

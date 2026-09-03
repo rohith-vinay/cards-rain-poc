@@ -417,3 +417,28 @@ plainly if anyone asks whether that is what the card will look like.
 - **Partner to card-design mapping.** Rain validates only that an art id is enabled for
   the programme, never that the caller owns it.
 - **The white-label sidebar.** Presentation only.
+
+## Sandbox outage: card creation returning 500 (2026-09-03)
+
+`POST /issuing/users/{userId}/cards` returns `500 InternalServerError` -
+"We had an issue with your request - we've been notified and are investigating it."
+
+Scope, established by probing:
+
+- **Only card creation is affected.** List companies, company balances, list users, list
+  cards, list transactions and get contracts all succeed, and a simulated purchase against
+  a pre-existing active card still authorizes normally.
+- **Not our request shape.** The bare minimum body `{ "type": "virtual" }` fails
+  identically to one carrying status, limit and configuration.
+- **Not the new company names.** It fails just as reliably on older companies where card
+  creation demonstrably worked earlier the same day.
+- **Not state.** Every company is `approved`, every cardholder is `approved`, and every
+  company shows $50,000 of spending power.
+- Retried 12 times over 8 minutes, consistently failing.
+
+Correlation ids to quote to Rain support: `a06b7824-4cca-43a3-a854-37fce1ee6e26`,
+`0b6455ee-16b2-4796-b977-afb6006a5bb9`.
+
+Consequence for the demo: the seeded businesses are funded and card-ready but hold no
+cards, because seeding deliberately leaves issuance as the demo's opening move. Until this
+clears, the issuance beat cannot be shown on the new businesses.
