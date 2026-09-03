@@ -48,6 +48,10 @@ npm run seed     # provision partners and businesses — do this BEFORE the demo
 npm start        # then open http://localhost:4040
 ```
 
+Seeding **replaces** the local business list each run — every run creates new companies
+in Rain, so appending would leave the picker showing two of everything. Pass `--append`
+to keep what is already there. Nothing is ever deleted on Rain's side.
+
 `npm run seed` creates three partners and six businesses — Partner A with Business A1, A2
 and A3; Partner B with B1 and B2; Partner C with C1 — funds every one with $50,000 of
 simulated collateral, and adds cardholders. The labels are deliberately plain so the

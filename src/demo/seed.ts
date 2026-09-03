@@ -140,8 +140,27 @@ async function seedBusiness(
   }
 }
 
+/**
+ * Seeding replaces the local business list by default. Each run creates brand new
+ * companies in Rain, so appending would leave the portal's picker showing two of
+ * everything with cards on only some of them - which is exactly the wrong surprise
+ * before a demo. Pass --append to keep what is already there.
+ */
+const append = process.argv.includes('--append');
+const existing = db.get().businesses.length;
+
 console.log('\nSeeding portal demo data');
 console.log('========================\n');
+
+if (existing > 0 && !append) {
+  db.clearBusinesses();
+  console.log(
+    `Replacing ${existing} previously seeded ${existing === 1 ? 'business' : 'businesses'}. ` +
+      'They still exist in Rain, this POC just stops tracking them.\n',
+  );
+} else if (existing > 0) {
+  console.log(`Appending to ${existing} existing businesses (--append).\n`);
+}
 
 let ok = 0;
 let failed = 0;

@@ -130,6 +130,12 @@ export const db = {
     return state.businesses.find((b) => b.companyId === companyId);
   },
 
+  /** Forget locally-tracked businesses. Nothing is deleted on Rain's side. */
+  clearBusinesses(): void {
+    state = { ...state, businesses: [] };
+    persist();
+  },
+
   resetDemoLog(): void {
     state = { ...state, demoLog: [] };
     persist();
