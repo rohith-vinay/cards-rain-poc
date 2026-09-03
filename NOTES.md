@@ -274,3 +274,56 @@ Consequences:
 - Physical appearance is immutable: a partner rebrand means reissuing physical cards.
 - Per-user card caps depend on contract tier: Developer 3, Startup 10, Enterprise
   consumer 50, Enterprise corporate 101 (counting canceled cards).
+
+---
+
+# What the demo actually invokes
+
+18 of the API's 130 operations, plus four inbound webhook types.
+
+## Phase 1 - `npm run seed` (before the demo, ~6 min)
+
+| Capability | Rain endpoint |
+|---|---|
+| Submit a corporate application (KYB) | `POST /issuing/applications/company` |
+| Upload company KYB document | `PUT /issuing/applications/company/{companyId}/document` |
+| Upload each UBO's identity document | `PUT /issuing/applications/company/{companyId}/ubo/{uboId}/document` |
+| Poll until KYB reaches a terminal status | `GET /issuing/applications/company/{companyId}` |
+| Read the auto-assigned collateral contract | `GET /issuing/companies/{companyId}/contracts` |
+| Fund collateral (sandbox) | `POST /simulate/collateral/fund` |
+| Confirm spending power before declaring ready | `GET /issuing/companies/{companyId}/balances` |
+| Create employees as cardholders | `POST /issuing/companies/{companyId}/users` |
+
+## Phase 2 - the portal, live on screen
+
+| Demo beat | Our route | Rain endpoint |
+|---|---|---|
+| Load / refresh a business | `GET /api/portal/business/:id` | `GET /issuing/companies/{id}/balances`, `GET /issuing/cards`, `GET /issuing/users`, `GET /issuing/transactions` |
+| Issue a card | `POST /api/users/:id/cards` | `GET /issuing/users/{userId}` (for the embossed name), `POST /issuing/users/{userId}/cards` |
+| Set a spend limit | `POST /api/cards/:id/limit` | `PATCH /issuing/cards/{cardId}` |
+| Lock / unlock | `POST /api/cards/:id/lock` \| `/unlock` | `PATCH /issuing/cards/{cardId}` |
+| Authorize a purchase | `POST /api/simulate/authorize` | `POST /simulate/transactions/authorize` |
+| Settle | `POST /api/simulate/transactions/:id/settle` | `POST /simulate/transactions/{id}/settle` |
+| Reverse | `.../reverse` | `POST /simulate/transactions/{id}/reverse` |
+| Refund | `.../refund` | `POST /simulate/transactions/{id}/refund` |
+
+## Phase 3 - inbound, unprompted
+
+Rain calls `POST /webhooks/rain`; each is HMAC-SHA256 verified against the raw body.
+Observed during a portal run: `transaction.requested`, `transaction.created`,
+`transaction.completed` (fires for both settlement and refund), `card.updated` (fires on
+both lock and unlock). Seeding additionally produces `company.updated`, `user.updated` and
+`contract.created`.
+
+## Built and verified, but NOT reachable from the portal UI
+
+These run in `npm run demo` (the CLI script) or exist as API routes only:
+
+- `PATCH /simulate/transactions/{id}/authorize` - merchant revises the amount before settling
+- `POST /issuing/transactions/{id}/disputes` - open a dispute
+- `GET/PATCH /issuing/disputes/{id}` - manage disputes
+- `PATCH /issuing/transactions/{id}` - attach a memo
+- `POST /issuing/companies/{id}/charges` - charge a platform fee
+- `GET /issuing/webhooks`, `GET/PATCH /issuing/webhooks/configuration`
+- `POST /issuing/companies/{id}/contracts` - contract creation (Rain assigns one on approval,
+  so the portal only reads)

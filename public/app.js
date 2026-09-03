@@ -6,7 +6,8 @@ const money = (cents) =>
 
 let ctx = null;         // partners + businesses
 let current = null;     // the business currently on screen
-let lastTxId = null;    // most recent authorization, for settle / reverse / refund
+let lastTxId = null;    // most recent authorization, for settle / reverse / refund / dispute
+let lastAmount = 0;
 
 // ---------------------------------------------------------------- plumbing
 
@@ -275,7 +276,9 @@ $('spendForm').addEventListener('submit', async (e) => {
       }),
     });
     lastTxId = result.transactionId;
-    showVerdict(result, amount);
+    lastAmount = amount;
+    if (result.status === 'declined') showVerdict('declined', { reason: result.declinedReason });
+    else showVerdict('authorized', { amount });
     await refresh();
   } catch (err) {
     // A locked card is refused outright rather than declined — that refusal is the point.
@@ -289,22 +292,66 @@ $('spendForm').addEventListener('submit', async (e) => {
   }
 });
 
-function showVerdict(result, amount) {
-  if (result.status === 'declined') {
-    $('spendResult').innerHTML = `
+/**
+ * The verdict bar walks the transaction's real lifecycle, so only the actions Rain
+ * will actually accept are offered. A dispute needs a posted transaction, so it only
+ * appears once the charge has settled.
+ */
+function showVerdict(state, detail = {}) {
+  const bar = $('spendResult');
+  // Never offer to refund more than was actually settled.
+  const refundAmount = Math.min(10000, lastAmount || 10000);
+
+  if (state === 'declined') {
+    bar.innerHTML = `
       <div class="verdict no">
-        <strong>Declined</strong><code>${result.declinedReason ?? ''}</code>
+        <strong>Declined</strong><code>${detail.reason ?? ''}</code>
       </div>`;
     return;
   }
-  $('spendResult').innerHTML = `
-    <div class="verdict ok">
-      <strong>Authorized ${money(amount)}</strong>
-      <span>held against spending power</span>
-      <button class="small" data-post="settle">Settle</button>
-      <button class="small" data-post="reverse">Reverse</button>
-      <button class="small" data-post="refund">Refund $100</button>
-    </div>`;
+  if (state === 'authorized') {
+    bar.innerHTML = `
+      <div class="verdict ok">
+        <strong>Authorized ${money(detail.amount)}</strong>
+        <span>held against spending power</span>
+        <button class="small" data-post="settle">Settle</button>
+        <button class="small" data-post="reverse">Reverse</button>
+      </div>`;
+    return;
+  }
+  if (state === 'settled') {
+    bar.innerHTML = `
+      <div class="verdict ok">
+        <strong>Settled ${money(detail.amount)}</strong>
+        <span>the charge has posted</span>
+        <button class="small" data-post="refund">Refund ${money(refundAmount)}</button>
+        <button class="small" data-post="dispute">Dispute</button>
+      </div>`;
+    return;
+  }
+  if (state === 'reversed') {
+    bar.innerHTML = `
+      <div class="verdict ok">
+        <strong>Reversed</strong><span>hold released, nothing posted</span>
+      </div>`;
+    return;
+  }
+  if (state === 'refunded') {
+    bar.innerHTML = `
+      <div class="verdict ok">
+        <strong>Refunded ${money(detail.amount ?? refundAmount)}</strong>
+        <span>credited back to the business</span>
+        <button class="small" data-post="dispute">Dispute</button>
+      </div>`;
+    return;
+  }
+  if (state === 'disputed') {
+    bar.innerHTML = `
+      <div class="verdict ok">
+        <strong>Dispute opened &middot; ${money(detail.amount)}</strong>
+        <span>filed with the card network, status ${detail.status ?? 'pending'}</span>
+      </div>`;
+  }
 }
 
 $('spendResult').addEventListener('click', async (e) => {
@@ -312,24 +359,49 @@ $('spendResult').addEventListener('click', async (e) => {
   if (!btn || !lastTxId) return;
   const action = btn.dataset.post;
   btn.disabled = true;
+
   try {
-    const amount = Math.round(parseFloat($('amount').value) * 100);
-    const body =
-      action === 'settle' ? { amount } : action === 'refund' ? { amount: 10000 } : {};
-    await api(`/api/simulate/transactions/${lastTxId}/${action}`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-    toast(
-      action === 'settle' ? 'Settled — the charge has posted'
-      : action === 'reverse' ? 'Reversed — hold released, nothing posted'
-      : 'Refunded $100.00',
-    );
+    if (action === 'dispute') {
+      const dispute = await api(`/api/transactions/${lastTxId}/disputes`, {
+        method: 'POST',
+        body: JSON.stringify({
+          disputeType: 'merchandiseIssue',
+          textEvidence: 'Goods arrived damaged; the merchant has not credited the account.',
+          disputeAmount: Math.min(25000, lastAmount),
+        }),
+      });
+      toast('Dispute opened and filed with the network');
+      showVerdict('disputed', { amount: dispute.disputeAmount, status: dispute.status });
+    } else {
+      const body =
+        action === 'settle' ? { amount: lastAmount }
+        : action === 'refund' ? { amount: Math.min(10000, lastAmount) }
+        : {};
+      await api(`/api/simulate/transactions/${lastTxId}/${action}`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      if (action === 'settle') {
+        toast('Settled — the charge has posted');
+        showVerdict('settled', { amount: lastAmount });
+      } else if (action === 'reverse') {
+        toast('Reversed — hold released, nothing posted');
+        showVerdict('reversed');
+      } else {
+        const refunded = Math.min(10000, lastAmount);
+        toast(`Refunded ${money(refunded)}`);
+        showVerdict('refunded', { amount: refunded });
+      }
+    }
     await refresh();
   } catch (err) {
-    toast(err.message, true);
-  } finally {
+    // A dispute needs the charge to have posted, which is not instant after settling.
+    const hint = action === 'dispute'
+      ? `${err.message} — a dispute needs the charge to have posted. Wait a moment and try again.`
+      : err.message;
+    toast(hint, true);
     btn.disabled = false;
+    return;
   }
 });
 
