@@ -251,6 +251,16 @@ all arrive, verify, and store, with zero signature failures.
 See `NOTES.md` for the 25 places where the OpenAPI spec or the docs disagree with the
 sandbox's actual behaviour.
 
+### If `npm start` says the port is in use
+
+A server is still running from an earlier session. The error tells you what to do:
+
+```bash
+lsof -nP -iTCP:4040 -sTCP:LISTEN     # see what is holding it
+pkill -f "tsx src/server.ts"          # stop it
+PORT=4041 npm start                   # or just use another port
+```
+
 ### If every webhook 401s
 
 Check the signing key length first — Rain keys are **40 hex characters**, and a truncated

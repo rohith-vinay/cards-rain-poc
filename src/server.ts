@@ -75,7 +75,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: err instanceof Error ? err.message : 'Internal error' });
 });
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   console.log(`\nRain sandbox backend listening on http://localhost:${config.port}`);
   console.log(`  Rain base URL     ${config.baseUrl}`);
   console.log(`  Webhook receiver  POST /webhooks/rain`);
@@ -89,4 +89,27 @@ app.listen(config.port, () => {
     console.warn('  WARNING: RAIN_OWNER_ADDRESS is unset - collateral contract creation will fail.');
   }
   console.log('');
+});
+
+/**
+ * A stack trace is the wrong thing to show someone five minutes before a demo. The
+ * common cases are a server already running and a privileged port, so say which.
+ */
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      `\nPort ${config.port} is already in use - the server is probably still running ` +
+        `from an earlier session.\n\n` +
+        `  Check:  lsof -nP -iTCP:${config.port} -sTCP:LISTEN\n` +
+        `  Stop:   pkill -f "tsx src/server.ts"\n` +
+        `  Or run on another port:  PORT=4041 npm start\n`,
+    );
+    process.exit(1);
+  }
+  if (err.code === 'EACCES') {
+    console.error(`\nNot allowed to bind port ${config.port}. Ports below 1024 need elevated rights - use PORT=4040.\n`);
+    process.exit(1);
+  }
+  console.error('\nCould not start the server:', err.message, '\n');
+  process.exit(1);
 });
