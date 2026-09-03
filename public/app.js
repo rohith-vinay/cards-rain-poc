@@ -159,9 +159,25 @@ async function loadContext() {
 
   const picker = $('businessPicker');
   picker.innerHTML = options || '<option value="">No businesses — run: npm run seed</option>';
-  // Browsers restore a previously selected option across reloads; a demo should always
-  // open on the same business.
+
+  // Browsers restore a previously selected option across reloads, so pin it explicitly.
+  // A ?business= parameter wins, which is what lets two windows sit side by side on
+  // different businesses: /?business=B1 next to /?business=A1.
   picker.selectedIndex = 0;
+  const wanted = new URLSearchParams(location.search).get('business');
+  if (wanted) {
+    const norm = (v) => v.replace(/\s+/g, '').toLowerCase();
+    const key = norm(wanted);
+    const all = ctx.partners.flatMap((p) => p.businesses);
+    // Accept a company id, the full name, or just the short code: B1, businessB1 and
+    // "Business B1" all resolve to the same business.
+    const match =
+      all.find((b) => b.companyId === wanted) ??
+      all.find((b) => norm(b.name) === key) ??
+      all.find((b) => norm(b.name).endsWith(key));
+    if (match) picker.value = match.companyId;
+    else toast(`No business matching "${wanted}" — showing the first one instead.`, true);
+  }
 
   $('footnote').textContent = ctx.isolationNote +
     ' Card art is resolved from the partner by the backend and never accepted from the browser; ' +
@@ -177,6 +193,12 @@ async function selectBusiness(companyId) {
   current = data;
 
   $('businessName').textContent = data.business.name;
+  // Two windows open at once need distinguishable titles, and a URL that survives a
+  // refresh or a copy-paste.
+  document.title = `${data.business.name} · Cards · Aloha`;
+  const url = new URL(location.href);
+  url.searchParams.set('business', data.business.name.replace(/\s+/g, ''));
+  history.replaceState(null, '', url);
   $('partnerLine').textContent = data.partner ? `${data.partner.name} · partner` : 'Direct';
   $('partnerChip').textContent = data.partner?.name ?? '—';
   $('subline').textContent = `${data.cardholders.length} cardholders · company-funded collateral`;

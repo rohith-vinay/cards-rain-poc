@@ -59,6 +59,21 @@ hierarchy reads itself on screen. It refuses to mark a business ready until
 spending power is confirmed above zero, so the slow and occasionally flaky parts — KYB and
 collateral crediting — happen well before an audience.
 
+### Two businesses side by side
+
+The portal serves every business from one port — the picker is a demo convenience, not an
+Aloha feature (a real Aloha user's business comes from their login). To show two partners
+at once, open two browser windows against the same server and deep-link each one:
+
+```
+http://localhost:4040/?business=A1     # Partner A, blue cards
+http://localhost:4040/?business=B1     # Partner B, green cards
+```
+
+`business` accepts the short code (`B1`), the full name (`Business B1`) or the company id.
+Each window keeps its own selection, sets its own tab title, and updates its URL as you
+switch, so a refresh lands you back where you were.
+
 ### Demo runbook, about three minutes
 
 1. **Issue a card** — appears instantly in the partner's branding
