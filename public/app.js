@@ -94,7 +94,7 @@ function renderCards(cards, partner, businessName) {
           </div>
           <div class="pan">•••• ${c.last4}</div>
           <div class="meta">
-            <span class="holder">${c.holder.toUpperCase()}</span>
+            <span class="holder">${c.embossed ?? c.holder.toUpperCase()}</span>
             <span class="exp">${c.expiry}</span>
           </div>
         </div>

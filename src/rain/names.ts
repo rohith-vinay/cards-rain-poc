@@ -46,3 +46,26 @@ export function cardDisplayName(firstName: string, lastName: string): string {
     .slice(0, 26)
     .trim();
 }
+
+/**
+ * The single name Rain will carry: the business's short trading name followed by the
+ * cardholder. Rain allows 26 characters and only letters, digits, spaces, periods and
+ * hyphens, so this uppercases, strips anything else, and protects the cardholder's name
+ * if the pair ever runs long.
+ */
+export function embossedName(cardName: string | undefined, holder: string): string {
+  const strip = (v: string) =>
+    v.replace(/[^A-Za-z0-9 .-]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+
+  const person = strip(holder);
+  if (!cardName) return person.slice(0, 26).trim();
+
+  const business = strip(cardName);
+  const combined = `${business} ${person}`;
+  if (combined.length <= 26) return combined;
+
+  // Never truncate the cardholder - shorten the business instead, and drop it entirely
+  // rather than leave an unrecognisable stub.
+  const room = 26 - person.length - 1;
+  return room >= 4 ? `${business.slice(0, room).trim()} ${person}` : person.slice(0, 26);
+}

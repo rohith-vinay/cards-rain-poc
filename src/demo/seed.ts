@@ -14,68 +14,10 @@ import { pollUntil } from '../lib/poll.js';
 import { PARTNERS } from '../partners/registry.js';
 import { rain } from '../rain/client.js';
 import { documentForm } from '../rain/document.js';
-import {
-  corporateApplication,
-  NAICS_AIR_FREIGHT,
-  NAICS_COURIERS,
-  NAICS_INVESTMENT_ADVICE,
-  NAICS_PAYMENT_PROCESSING,
-  NAICS_PORTFOLIO_MANAGEMENT,
-  NAICS_SOFTWARE_PUBLISHERS,
-} from '../rain/fixtures.js';
+import { BUSINESSES, type BusinessProfile } from '../partners/businesses.js';
+import { corporateApplication } from '../rain/fixtures.js';
 import { TERMINAL_APPLICATION_STATUSES } from '../rain/types.js';
 import { db, type SeededBusiness } from '../store/db.js';
-
-/**
- * The businesses each partner onboards. The trading name is what the portal shows; the
- * legal name and NAICS code go to Rain on the application, so each one reads like a real
- * entity in its partner's sector rather than a placeholder.
- */
-interface SeedBusiness {
-  name: string;
-  entityName: string;
-  industry: string;
-}
-
-const BUSINESSES: Record<string, SeedBusiness[]> = {
-  'partner-cargobill': [
-    {
-      name: 'TRUST AIR CARGO U.S.A. CO.',
-      entityName: 'Trust Air Cargo U.S.A. Co.',
-      industry: NAICS_AIR_FREIGHT,
-    },
-    {
-      name: 'COGO UNIVERSE PTE. LTD.',
-      entityName: 'Cogo Universe Pte. Ltd.',
-      industry: NAICS_COURIERS,
-    },
-    {
-      name: 'Galleon Technology, Inc.',
-      entityName: 'Galleon Technology, Inc.',
-      industry: NAICS_SOFTWARE_PUBLISHERS,
-    },
-  ],
-  'partner-abra': [
-    { name: 'GB Sales LLC', entityName: 'GB Sales LLC', industry: NAICS_PORTFOLIO_MANAGEMENT },
-    {
-      name: 'Moxley Group Limited',
-      entityName: 'Moxley Group Limited',
-      industry: NAICS_INVESTMENT_ADVICE,
-    },
-  ],
-  'partner-maksupay': [
-    {
-      name: 'GLOBER SERVICOS FINANCEIROS LTDA',
-      entityName: 'Glober Servicos Financeiros Ltda',
-      industry: NAICS_PAYMENT_PROCESSING,
-    },
-    {
-      name: 'Palomita Holdings',
-      entityName: 'Palomita Holdings',
-      industry: NAICS_PAYMENT_PROCESSING,
-    },
-  ],
-};
 
 const EMPLOYEES_PER_BUSINESS = 2;
 const employees = () =>
@@ -91,7 +33,7 @@ const FUNDING = fundingArg ? Number(fundingArg.split('=')[1]) : 5_000_000;
 
 async function seedBusiness(
   partnerId: string,
-  business: SeedBusiness,
+  business: BusinessProfile,
   index: number,
 ): Promise<SeededBusiness | null> {
   const { name: displayName, entityName, industry } = business;

@@ -538,3 +538,37 @@ Three gaps worth knowing:
 `merchantCity`, `merchantCountry`, `localAmount` and `localCurrency` for cross-currency
 spend, `authorizationMethod`, `authorizedAmount`, and `isForcePosted`. Now passed through
 the portal API for city and country; the rest remain unused.
+
+## The embossed name: business plus cardholder
+
+Rain carries one name, `configuration.displayName`, 26 characters, `[A-Za-z0-9 .-]`.
+The portal now composes it as **short trading name + cardholder**, which is how a real
+corporate card is embossed.
+
+The registered names do not fit - only 2 of 7 leave room for a cardholder:
+
+| Registered name + `USER 1` | |
+|---|---|
+| GB Sales LLC USER 1 | 19, fits |
+| Palomita Holdings USER 1 | 24, fits |
+| Moxley Group Limited USER 1 | 27, one over |
+| COGO UNIVERSE PTE. LTD. USER 1 | 30 |
+| TRUST AIR CARGO U.S.A. CO. USER 1 | 33 |
+| GLOBER SERVICOS FINANCEIROS LTDA USER 1 | 39 |
+
+So each business carries a **chosen** short name in `src/partners/businesses.ts`, not a
+truncation. Every result fits with room to spare:
+
+```
+TRUST AIR USER 1        16      GB SALES USER 1       15
+COGO UNIVERSE USER 1    20      MOXLEY GROUP USER 1   19
+GALLEON USER 1          14      GLOBER USER 1         13
+PALOMITA USER 1         15
+```
+
+`embossedName()` uppercases, strips characters Rain rejects (the comma in "Galleon
+Technology, Inc." among them), and if a pair ever runs long it shortens the business
+rather than the cardholder - a truncated person's name is worse than a truncated brand.
+
+Because Rain does not echo `displayName` back on the card object, the portal recomputes
+the identical string for display. The card face therefore shows exactly what Rain holds.

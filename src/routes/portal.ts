@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { asyncHandler } from '../lib/async-handler.js';
 import { HttpError } from '../lib/errors.js';
+import { businessProfile } from '../partners/businesses.js';
 import { getPartner, PARTNERS } from '../partners/registry.js';
 import { rain } from '../rain/client.js';
-import { holderLabel } from '../rain/names.js';
+import { embossedName, holderLabel } from '../rain/names.js';
 import type { IssuingCard, IssuingTransaction } from '../rain/types.js';
 import { db } from '../store/db.js';
 
@@ -49,6 +50,7 @@ portalRouter.get(
     if (!business) throw new HttpError(404, 'Unknown business. Run the seed script first.');
 
     const partner = getPartner(business.partnerId);
+    const profile = businessProfile(business.name);
 
     // Fetched together so one slow call cannot leave the page half-drawn.
     const [balances, cards, users, transactions] = await Promise.all([
@@ -61,7 +63,12 @@ portalRouter.get(
     const holders = new Map(users.map((u) => [u.id, holderLabel(u.firstName, u.lastName)]));
 
     res.json({
-      business: { companyId, name: business.name, contractId: business.contractId },
+      business: {
+        companyId,
+        name: business.name,
+        contractId: business.contractId,
+        cardName: profile?.cardName,
+      },
       partner: partner
         ? { id: partner.id, name: partner.name, brand: partner.brand, design: partner.design }
         : null,
@@ -79,6 +86,8 @@ portalRouter.get(
         // Rain returns "3" / "2032"; a card face reads 03/32.
         expiry: `${String(c.expirationMonth).padStart(2, '0')}/${String(c.expirationYear).slice(-2)}`,
         holder: holders.get(c.userId) ?? 'Unknown',
+        // Rain does not echo displayName back, so recompute the exact string it holds.
+        embossed: embossedName(profile?.cardName, holders.get(c.userId) ?? ''),
         userId: c.userId,
         // Rain reports which digital wallets a card is tokenized into. Reporting is
         // off by default per account, so an empty array does not prove there are none.

@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { asyncHandler } from '../lib/async-handler.js';
 import { HttpError } from '../lib/errors.js';
+import { businessProfile } from '../partners/businesses.js';
 import { resolveCardDesign, stripClientDesign } from '../partners/registry.js';
 import { rain } from '../rain/client.js';
-import { cardDisplayName } from '../rain/names.js';
+import { embossedName, holderLabel } from '../rain/names.js';
 import type { CardLimitFrequency, CardStatus, CardType } from '../rain/types.js';
 import { db } from '../store/db.js';
 
@@ -42,10 +43,14 @@ cardsRouter.post(
     const business = req.body?.companyId ? db.findBusiness(req.body.companyId) : undefined;
     const design = business ? resolveCardDesign(business.partnerId) : {};
 
-    // Emboss the display name without the sandbox status token, so the card reads
-    // "User 1" rather than "User 1Approved".
+    // Rain carries one name. Compose it from the business's short trading name and the
+    // cardholder, the way a real corporate card is embossed - and strip the sandbox
+    // status token so it reads "TRUST AIR USER 1", not "User 1Approved".
     const holder = await rain.getUser(req.params.userId!).catch(() => null);
-    const displayName = holder ? cardDisplayName(holder.firstName, holder.lastName) : undefined;
+    const profile = business ? businessProfile(business.name) : undefined;
+    const displayName = holder
+      ? embossedName(profile?.cardName, holderLabel(holder.firstName, holder.lastName))
+      : undefined;
 
     const card = await rain.createCard(req.params.userId!, {
       type,
